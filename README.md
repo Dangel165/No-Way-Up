@@ -1,37 +1,37 @@
 # No Way Up
 
-Forge 1.20.1 psychological horror mod prototype.
+Forge 1.20.1 기반 심리 공포 모드입니다.
 
-## Current Prototype
+## 현재 구현된 기능
 
-- Spawns first-time players inside a sealed mineshaft chamber.
-- Tracks fear progression per player with world `SavedData`.
-- Plays unsettling vanilla sound cues around the player.
-- Sends English horror whispers and subtitle-style action bar messages.
-- Creates a one-time desktop text file: `READ_ME_NOWAYUP.txt`.
-- Triggers a one-time automatic forced crash during mid-game progression to lure the player into reconnecting.
-- Places English story/lore books across separate starting mine chests.
-- Spawns a temporary watcher illusion behind or ahead of the player using the player's head and dark worn armor.
-- Redirects upward escape attempts into newly generated deeper mineshaft segments.
-- Generates varied mine segments: storage rooms, bunks, cave-ins, sculk shrines, split rails, false exits, signs, and message chests.
-- Mutates the starting mine after reconnects: cold torches, opened doors, new signs, and message books.
-- Registers and uses the `nowayup:mirror_mine` dimension for the mirrored mine.
-- Runs staged mirror collapse events with block changes, sound, darkness, and route closure.
-- Supports Loop, Descent, and Replacement endings with world changes and status effects.
-- Suppresses monster spawns inside the mirror mine.
+- 처음 접속한 플레이어를 봉쇄된 폐광 방 안에 스폰시킵니다.
+- 월드 `SavedData`를 사용해 플레이어별 공포 진행도를 저장합니다.
+- 플레이어 주변에서 불길한 바닐라 사운드를 재생합니다.
+- 영어 공포 속삭임과 자막형 액션바 메시지를 표시합니다.
+- 바탕화면에 `READ_ME_NOWAYUP.txt` 텍스트 파일을 1회 생성합니다.
+- 중반 진행 중 재접속을 유도하기 위해 자동 강제 크래시를 1회 발생시킵니다.
+- 시작 폐광의 여러 상자에 영어 스토리/로어 책을 나누어 배치합니다.
+- 플레이어 머리와 어두운 장비를 사용한 임시 Watcher 환영을 앞이나 뒤에 생성합니다.
+- 위로 탈출하려는 시도를 새로 생성된 더 깊은 폐광 세그먼트로 되돌립니다.
+- 창고, 숙소, 무너진 길, 스컬크 제단, 갈라진 레일, 가짜 출구, 표지판, 메시지 상자 등 다양한 폐광 세그먼트를 생성합니다.
+- 재접속 후 시작 폐광을 변화시킵니다: 차가운 횃불, 열린 문, 새 표지판, 메시지 책.
+- 거울 폐광용 `nowayup:mirror_mine` 차원을 등록하고 사용합니다.
+- 블록 변화, 사운드, 암흑 효과, 경로 폐쇄가 포함된 단계별 거울 폐광 붕괴 이벤트를 실행합니다.
+- 월드 변화와 상태 효과가 포함된 Loop, Descent, Replacement 엔딩을 지원합니다.
+- 거울 폐광 내부의 몬스터 스폰을 억제합니다.
 
-## Horror File Note
+## 공포 파일 연출 안내
 
-During normal progression the mod creates `READ_ME_NOWAYUP.txt` on the user's Desktop once. It never creates executables, scripts, startup entries, or overwrites existing files.
+일반 진행 중 모드는 사용자의 바탕화면에 `READ_ME_NOWAYUP.txt` 파일을 1회 생성합니다. 실행 파일, 스크립트, 시작프로그램 항목은 생성하지 않으며 기존 파일을 덮어쓰지 않습니다.
 
-## Story
+## 스토리
 
-The full story, timeline, lore notes, and ending concepts are in [STORY.md](STORY.md).
-Korean translation is available in [STORY_KO.md](STORY_KO.md).
+전체 영어 스토리, 연표, 로어 노트, 엔딩 콘셉트는 [STORY.md](STORY.md)에 있습니다.
+한국어 번역본은 [STORY_KO.md](STORY_KO.md)에서 볼 수 있습니다.
 
-## Test Commands
+## 테스트 명령어
 
-Requires operator permission:
+OP 권한이 필요합니다.
 
 ```text
 /nowayup start
@@ -46,7 +46,7 @@ Requires operator permission:
 /nowayup mirror
 ```
 
-Suggested quick test:
+빠른 테스트 추천 순서:
 
 ```text
 /nowayup start
@@ -58,12 +58,12 @@ Suggested quick test:
 /nowayup mirror
 ```
 
-The mod can intentionally throw a real runtime exception during progression. `/nowayup crash` triggers the same style of crash manually for testing.
+이 모드는 진행 중 의도적으로 실제 런타임 예외를 발생시킬 수 있습니다. `/nowayup crash`는 같은 방식의 크래시를 수동으로 테스트하는 명령어입니다.
 
-## Build
+## 빌드
 
 ```powershell
 ./gradlew build
 ```
 
-Network access is required the first time Gradle downloads Forge.
+Gradle이 Forge를 처음 다운로드할 때는 네트워크 연결이 필요합니다.
