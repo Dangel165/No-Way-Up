@@ -1,0 +1,16 @@
+{
+  "type": "nowayup:mirror_mine",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:deep_dark",
+      "layers": [
+        {
+          "height": 1,
+          "block": "minecraft:bedrock"
+        }
+      ],
+      "structure_overrides": []
+    }
+  }
+}

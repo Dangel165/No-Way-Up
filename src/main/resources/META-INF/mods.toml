@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="nowayup"
+version="${file.jarVersion}"
+displayName="No Way Up"
+authors="No Way Up Team"
+description='''
+There is no way out. The higher you climb, the deeper the mine becomes.
+And you are not alone.
+'''
+
+[[dependencies.nowayup]]
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.nowayup]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.21)"
+ordering="NONE"
+side="BOTH"
