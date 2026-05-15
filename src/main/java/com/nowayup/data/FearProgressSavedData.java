@@ -14,6 +14,7 @@ public class FearProgressSavedData extends SavedData {
 
     private final Map<UUID, PlayerFearState> playerStates = new HashMap<>();
     private boolean worldInitialized;
+    private boolean prisonShellBuilt;
 
     public static FearProgressSavedData get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(FearProgressSavedData::load, FearProgressSavedData::new, DATA_NAME);
@@ -22,6 +23,7 @@ public class FearProgressSavedData extends SavedData {
     public static FearProgressSavedData load(CompoundTag tag) {
         FearProgressSavedData data = new FearProgressSavedData();
         data.worldInitialized = tag.getBoolean("WorldInitialized");
+        data.prisonShellBuilt = tag.getBoolean("PrisonShellBuilt");
         ListTag players = tag.getList("Players", Tag.TAG_COMPOUND);
         for (int i = 0; i < players.size(); i++) {
             CompoundTag playerTag = players.getCompound(i);
@@ -43,9 +45,18 @@ public class FearProgressSavedData extends SavedData {
         worldInitialized = true;
     }
 
+    public boolean prisonShellBuilt() {
+        return prisonShellBuilt;
+    }
+
+    public void setPrisonShellBuilt() {
+        prisonShellBuilt = true;
+    }
+
     @Override
     public CompoundTag save(CompoundTag tag) {
         tag.putBoolean("WorldInitialized", worldInitialized);
+        tag.putBoolean("PrisonShellBuilt", prisonShellBuilt);
         ListTag players = new ListTag();
         for (Map.Entry<UUID, PlayerFearState> entry : playerStates.entrySet()) {
             CompoundTag playerTag = new CompoundTag();

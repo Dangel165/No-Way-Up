@@ -59,8 +59,14 @@ public final class MineshaftPrisonSystem {
         placeLoreChest(level, center.offset(-3, 0, -3), 1);
         placeLoreChest(level, center.offset(3, 0, -3), 2);
         placeLoreChest(level, center.offset(3, 0, 3), 3);
+        buildMirrorGate(level, center, 5);
         updateSupplyChest(level);
         buildNoSurfaceColumn(level);
+    }
+
+    public static void refreshMirrorGate(ServerLevel level, int depth) {
+        BlockPos center = depth <= 0 ? START_POS : segmentCenter(depth);
+        buildMirrorGate(level, center, segmentRadius(depth));
     }
 
     public static void buildNoSurfaceColumn(ServerLevel level) {
@@ -149,8 +155,19 @@ public final class MineshaftPrisonSystem {
             && player.blockPosition().distSqr(center.offset(0, 4, 5)) < 16.0;
     }
 
+    public static boolean isAtMirrorGate(ServerPlayer player, int depth) {
+        return player.blockPosition().distSqr(mirrorGateTriggerPos(depth)) < 4.0
+            || player.blockPosition().distSqr(mirrorGateTriggerPos(0)) < 4.0;
+    }
+
+    public static BlockPos mirrorGateTriggerPos(int depth) {
+        BlockPos center = depth <= 0 ? START_POS : segmentCenter(depth);
+        int radius = segmentRadius(depth);
+        return center.offset(0, 0, -radius + 1);
+    }
+
     private static void buildDeepSegment(ServerLevel level, BlockPos center, int depth) {
-        int radius = 5 + Math.min(2, depth % 3);
+        int radius = segmentRadius(depth);
         for (int x = -radius; x <= radius; x++) {
             for (int y = -1; y <= 4; y++) {
                 for (int z = -radius; z <= radius; z++) {
@@ -175,10 +192,35 @@ public final class MineshaftPrisonSystem {
 
         level.setBlock(center.offset(0, 1, 0), depth % 2 == 0 ? Blocks.REDSTONE_TORCH.defaultBlockState() : Blocks.SOUL_TORCH.defaultBlockState(), 3);
         buildFalseExit(level, center.offset(0, 0, radius - 1));
+        buildMirrorGate(level, center, radius);
         buildSegmentVariant(level, center, radius, depth);
         if (depth % 2 == 0) {
             placeMessageChest(level, center.offset(-radius + 2, 0, -radius + 2), depth);
         }
+    }
+
+    private static int segmentRadius(int depth) {
+        return depth <= 0 ? 5 : 5 + Math.min(2, depth % 3);
+    }
+
+    private static void buildMirrorGate(ServerLevel level, BlockPos center, int radius) {
+        BlockPos wall = center.offset(0, 0, -radius);
+        for (int x = -2; x <= 2; x++) {
+            for (int y = 0; y <= 3; y++) {
+                BlockPos pos = wall.offset(x, y, 0);
+                boolean frame = Math.abs(x) == 2 || y == 0 || y == 3;
+                if (frame) {
+                    level.setBlock(pos, Blocks.CRYING_OBSIDIAN.defaultBlockState(), 3);
+                } else {
+                    level.setBlock(pos, Blocks.SCULK.defaultBlockState(), 3);
+                }
+            }
+        }
+
+        BlockPos trigger = center.offset(0, 0, -radius + 1);
+        level.setBlock(trigger, Blocks.SCULK.defaultBlockState(), 3);
+        level.setBlock(trigger.above(2), Blocks.SOUL_LANTERN.defaultBlockState(), 3);
+        SignTextSystem.placeStandingSign(level, trigger.east(), 12, "Kneel", "before the", "wrong wall.", "");
     }
 
     private static void buildFalseExit(ServerLevel level, BlockPos bottom) {

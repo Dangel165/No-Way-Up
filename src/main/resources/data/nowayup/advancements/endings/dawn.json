@@ -1,0 +1,28 @@
+{
+  "parent": "nowayup:root",
+  "display": {
+    "icon": {
+      "item": "minecraft:oxeye_daisy"
+    },
+    "title": {
+      "text": "Dawn Ending"
+    },
+    "description": {
+      "text": "You carried every name back to the morning."
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "ending": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "ending"
+    ]
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "parent": "nowayup:root",
+  "display": {
+    "icon": {
+      "item": "minecraft:reinforced_deepslate"
+    },
+    "title": {
+      "text": "Seal Ending"
+    },
+    "description": {
+      "text": "The mine is quiet. For now."
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "ending": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "ending"
+    ]
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "parent": "nowayup:root",
+  "display": {
+    "icon": {
+      "item": "minecraft:writable_book"
+    },
+    "title": {
+      "text": "Elias Ending"
+    },
+    "description": {
+      "text": "You came without a map."
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "ending": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "ending"
+    ]
+  ]
+}

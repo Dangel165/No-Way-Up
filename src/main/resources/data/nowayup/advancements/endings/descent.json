@@ -1,0 +1,28 @@
+{
+  "parent": "nowayup:root",
+  "display": {
+    "icon": {
+      "item": "minecraft:oak_door"
+    },
+    "title": {
+      "text": "Descent Ending"
+    },
+    "description": {
+      "text": "You found a way down. That was never allowed."
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "ending": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "ending"
+    ]
+  ]
+}

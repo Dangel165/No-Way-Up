@@ -17,6 +17,11 @@ public class PlayerFearState {
     private boolean loopEndingComplete;
     private boolean descentEndingComplete;
     private boolean replacementEndingComplete;
+    private boolean witnessEndingComplete;
+    private boolean sealEndingComplete;
+    private boolean eliasEndingComplete;
+    private boolean eliasAscentComplete;
+    private boolean happyEndingComplete;
     private long nextAudioTick;
     private long nextWhisperTick;
     private long nextWatcherTick;
@@ -42,6 +47,11 @@ public class PlayerFearState {
         state.loopEndingComplete = tag.getBoolean("LoopEndingComplete");
         state.descentEndingComplete = tag.getBoolean("DescentEndingComplete");
         state.replacementEndingComplete = tag.getBoolean("ReplacementEndingComplete");
+        state.witnessEndingComplete = tag.getBoolean("WitnessEndingComplete");
+        state.sealEndingComplete = tag.getBoolean("SealEndingComplete");
+        state.eliasEndingComplete = tag.getBoolean("EliasEndingComplete");
+        state.eliasAscentComplete = tag.getBoolean("EliasAscentComplete");
+        state.happyEndingComplete = tag.getBoolean("HappyEndingComplete");
         state.nextAudioTick = tag.getLong("NextAudioTick");
         state.nextWhisperTick = tag.getLong("NextWhisperTick");
         state.nextWatcherTick = tag.getLong("NextWatcherTick");
@@ -69,6 +79,11 @@ public class PlayerFearState {
         tag.putBoolean("LoopEndingComplete", loopEndingComplete);
         tag.putBoolean("DescentEndingComplete", descentEndingComplete);
         tag.putBoolean("ReplacementEndingComplete", replacementEndingComplete);
+        tag.putBoolean("WitnessEndingComplete", witnessEndingComplete);
+        tag.putBoolean("SealEndingComplete", sealEndingComplete);
+        tag.putBoolean("EliasEndingComplete", eliasEndingComplete);
+        tag.putBoolean("EliasAscentComplete", eliasAscentComplete);
+        tag.putBoolean("HappyEndingComplete", happyEndingComplete);
         tag.putLong("NextAudioTick", nextAudioTick);
         tag.putLong("NextWhisperTick", nextWhisperTick);
         tag.putLong("NextWatcherTick", nextWatcherTick);
@@ -220,6 +235,59 @@ public class PlayerFearState {
         replacementEndingComplete = false;
     }
 
+    public boolean witnessEndingComplete() {
+        return witnessEndingComplete;
+    }
+
+    public void setWitnessEndingComplete() {
+        witnessEndingComplete = true;
+    }
+
+    public void resetWitnessEndingComplete() {
+        witnessEndingComplete = false;
+    }
+
+    public boolean sealEndingComplete() {
+        return sealEndingComplete;
+    }
+
+    public void setSealEndingComplete() {
+        sealEndingComplete = true;
+    }
+
+    public void resetSealEndingComplete() {
+        sealEndingComplete = false;
+    }
+
+    public boolean eliasEndingComplete() {
+        return eliasEndingComplete;
+    }
+
+    public void setEliasEndingComplete() {
+        eliasEndingComplete = true;
+    }
+
+    public void resetEliasEndingComplete() {
+        eliasEndingComplete = false;
+        eliasAscentComplete = false;
+    }
+
+    public boolean eliasAscentComplete() {
+        return eliasAscentComplete;
+    }
+
+    public void setEliasAscentComplete() {
+        eliasAscentComplete = true;
+    }
+
+    public boolean happyEndingComplete() {
+        return happyEndingComplete;
+    }
+
+    public void setHappyEndingComplete() {
+        happyEndingComplete = true;
+    }
+
     public void resetRunAfterDeath(long gameTime) {
         resetFakeExitCount();
         resetWatcherSightings();
@@ -230,6 +298,9 @@ public class PlayerFearState {
         resetLoopEndingComplete();
         resetDescentEndingComplete();
         resetReplacementEndingComplete();
+        resetWitnessEndingComplete();
+        resetSealEndingComplete();
+        resetEliasEndingComplete();
         resetEventTimers(gameTime);
         startWakeSequence(gameTime);
     }

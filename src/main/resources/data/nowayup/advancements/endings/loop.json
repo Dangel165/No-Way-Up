@@ -1,0 +1,28 @@
+{
+  "parent": "nowayup:root",
+  "display": {
+    "icon": {
+      "item": "minecraft:ladder"
+    },
+    "title": {
+      "text": "Loop Ending"
+    },
+    "description": {
+      "text": "You climbed back into the beginning."
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "ending": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "ending"
+    ]
+  ]
+}

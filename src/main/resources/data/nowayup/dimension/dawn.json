@@ -1,0 +1,11 @@
+{
+  "type": "nowayup:dawn",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:meadow",
+      "layers": [],
+      "structure_overrides": []
+    }
+  }
+}
