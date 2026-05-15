@@ -18,10 +18,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -146,6 +148,20 @@ public class NoWayUpEvents {
     }
 
     @SubscribeEvent
+    public void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (!(event.getPlayer() instanceof ServerPlayer player)) {
+            return;
+        }
+        BlockPos pos = event.getPos();
+        boolean noWayUpRegion = player.serverLevel().dimension().equals(MirrorMineSystem.MIRROR_LEVEL)
+            || MirrorMineSystem.isInsideMirrorRegion(pos)
+            || MineshaftPrisonSystem.isInsideMineRegion(pos);
+        if (noWayUpRegion) {
+            event.setCanceled(false);
+        }
+    }
+
+    @SubscribeEvent
     public void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (event.getEntity() instanceof Monster monster
             && event.getLevel() instanceof ServerLevel level
@@ -172,6 +188,7 @@ public class NoWayUpEvents {
         FearProgressSavedData data = FearProgressSavedData.get(level);
         PlayerFearState state = data.stateFor(player.getUUID());
         ensureMineReady(level, data);
+        player.setGameMode(GameType.SURVIVAL);
         state.setFirstSpawnComplete();
         state.addFear(10);
         state.resetRunAfterDeath(level.getGameTime());
@@ -204,12 +221,14 @@ public class NoWayUpEvents {
 
         if (!state.firstSpawnComplete()) {
             ensureMineReady(level, data);
+            player.setGameMode(GameType.SURVIVAL);
             player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
             state.setFirstSpawnComplete();
             state.resetEventTimers(level.getGameTime());
             state.startWakeSequence(level.getGameTime());
         } else {
             ensureMineReady(level, data);
+            player.setGameMode(GameType.SURVIVAL);
             state.incrementReconnectCount();
             state.addFear(15);
             if (state.fearProgress() >= 100 || state.reconnectCount() >= 1) {

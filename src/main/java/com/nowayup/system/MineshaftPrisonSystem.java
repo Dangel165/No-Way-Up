@@ -132,7 +132,10 @@ public final class MineshaftPrisonSystem {
     }
 
     public static boolean isInsideMineRegion(ServerPlayer player) {
-        BlockPos pos = player.blockPosition();
+        return isInsideMineRegion(player.blockPosition());
+    }
+
+    public static boolean isInsideMineRegion(BlockPos pos) {
         return pos.getY() <= START_POS.getY() + 24
             && pos.getY() >= START_POS.getY() - 280
             && Math.abs(pos.getX() - START_POS.getX()) <= 160
