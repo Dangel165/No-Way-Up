@@ -214,6 +214,13 @@ public class PlayerFearState {
         this.nextWatcherTick = nextWatcherTick;
     }
 
+    public void resetEventTimers(long gameTime) {
+        nextAudioTick = gameTime + 80L;
+        nextWhisperTick = gameTime + 160L;
+        nextWatcherTick = gameTime + 240L;
+        minuteProgressTick = gameTime + 1200L;
+    }
+
     public long minuteProgressTick() {
         return minuteProgressTick;
     }

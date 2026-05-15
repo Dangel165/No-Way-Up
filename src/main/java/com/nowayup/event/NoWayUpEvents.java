@@ -22,6 +22,7 @@ import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerSetSpawnEvent;
@@ -155,6 +156,13 @@ public class NoWayUpEvents {
     }
 
     @SubscribeEvent
+    public void onPlayerDeath(LivingDeathEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            player.displayClientMessage(Component.literal("You will never get out."), false);
+        }
+    }
+
+    @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
@@ -165,8 +173,11 @@ public class NoWayUpEvents {
         PlayerFearState state = data.stateFor(player.getUUID());
         ensureMineReady(level, data);
         state.setFirstSpawnComplete();
+        state.addFear(10);
+        state.resetEventTimers(level.getGameTime());
         player.server.execute(() -> {
             player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
+            player.displayClientMessage(Component.literal("You will never get out."), false);
             player.displayClientMessage(Component.literal("Death was not a way out."), true);
         });
         data.setDirty();
@@ -193,7 +204,7 @@ public class NoWayUpEvents {
             ensureMineReady(level, data);
             player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
             state.setFirstSpawnComplete();
-            state.setMinuteProgressTick(level.getGameTime() + 1200L);
+            state.resetEventTimers(level.getGameTime());
         } else {
             ensureMineReady(level, data);
             state.incrementReconnectCount();
