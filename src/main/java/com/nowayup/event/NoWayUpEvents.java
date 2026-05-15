@@ -173,15 +173,14 @@ public class NoWayUpEvents {
         PlayerFearState state = data.stateFor(player.getUUID());
         ensureMineReady(level, data);
         state.setFirstSpawnComplete();
-        state.setMirrorEntered(false);
-        state.setCollapseStage(0);
-        state.setMirrorEventStage(0);
         state.addFear(10);
-        state.resetEventTimers(level.getGameTime());
+        state.resetRunAfterDeath(level.getGameTime());
         player.server.execute(() -> {
             player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
             player.displayClientMessage(Component.literal("You will never get out."), false);
             player.displayClientMessage(Component.literal("Death was not a way out."), true);
+            level.playSound(null, MineshaftPrisonSystem.START_POS, SoundEvents.AMBIENT_CAVE.value(), SoundSource.AMBIENT, 1.0F, 0.45F);
+            level.playSound(null, MineshaftPrisonSystem.START_POS.offset(0, 0, -4), SoundEvents.WOODEN_DOOR_CLOSE, SoundSource.AMBIENT, 0.9F, 0.5F);
         });
         data.setDirty();
     }

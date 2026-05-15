@@ -102,12 +102,20 @@ public class PlayerFearState {
         fakeExitCount++;
     }
 
+    public void resetFakeExitCount() {
+        fakeExitCount = 0;
+    }
+
     public int watcherSightings() {
         return watcherSightings;
     }
 
     public void incrementWatcherSightings() {
         watcherSightings++;
+    }
+
+    public void resetWatcherSightings() {
+        watcherSightings = 0;
     }
 
     public int environmentMutationCount() {
@@ -158,6 +166,10 @@ public class PlayerFearState {
         forcedCrashTriggered = true;
     }
 
+    public void resetForcedCrashTriggered() {
+        forcedCrashTriggered = false;
+    }
+
     public boolean mirrorEntered() {
         return mirrorEntered;
     }
@@ -174,6 +186,10 @@ public class PlayerFearState {
         loopEndingComplete = true;
     }
 
+    public void resetLoopEndingComplete() {
+        loopEndingComplete = false;
+    }
+
     public boolean descentEndingComplete() {
         return descentEndingComplete;
     }
@@ -182,12 +198,33 @@ public class PlayerFearState {
         descentEndingComplete = true;
     }
 
+    public void resetDescentEndingComplete() {
+        descentEndingComplete = false;
+    }
+
     public boolean replacementEndingComplete() {
         return replacementEndingComplete;
     }
 
     public void setReplacementEndingComplete() {
         replacementEndingComplete = true;
+    }
+
+    public void resetReplacementEndingComplete() {
+        replacementEndingComplete = false;
+    }
+
+    public void resetRunAfterDeath(long gameTime) {
+        resetFakeExitCount();
+        resetWatcherSightings();
+        resetForcedCrashTriggered();
+        setMirrorEntered(false);
+        setCollapseStage(0);
+        setMirrorEventStage(0);
+        resetLoopEndingComplete();
+        resetDescentEndingComplete();
+        resetReplacementEndingComplete();
+        resetEventTimers(gameTime);
     }
 
     public long nextAudioTick() {
@@ -215,9 +252,9 @@ public class PlayerFearState {
     }
 
     public void resetEventTimers(long gameTime) {
-        nextAudioTick = gameTime + 80L;
-        nextWhisperTick = gameTime + 160L;
-        nextWatcherTick = gameTime + 240L;
+        nextAudioTick = gameTime + 20L;
+        nextWhisperTick = gameTime + 60L;
+        nextWatcherTick = gameTime + 120L;
         minuteProgressTick = gameTime + 1200L;
     }
 
