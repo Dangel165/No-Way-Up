@@ -216,7 +216,7 @@ public class NoWayUpEvents {
             && player.getY() > MineshaftPrisonSystem.SURFACE_ESCAPE_Y) {
             state.incrementFakeExitCount();
             state.addFear(10);
-            if (MirrorMineSystem.shouldEnterMirror(state)) {
+            if (player.getY() > MineshaftPrisonSystem.MIRROR_ESCAPE_Y || state.fakeExitCount() >= 3 || MirrorMineSystem.shouldEnterMirror(state)) {
                 MirrorMineSystem.enterMirror(player, state);
                 return true;
             }
