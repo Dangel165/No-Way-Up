@@ -9,6 +9,7 @@ public class PlayerFearState {
     private int watcherSightings;
     private int environmentMutationCount;
     private int collapseStage;
+    private int mirrorEventStage;
     private boolean firstSpawnComplete;
     private boolean desktopMessageCreated;
     private boolean forcedCrashTriggered;
@@ -21,6 +22,7 @@ public class PlayerFearState {
     private long nextWatcherTick;
     private long minuteProgressTick;
     private long mirrorStartTick;
+    private long nextMirrorFootstepTick;
 
     public static PlayerFearState load(CompoundTag tag) {
         PlayerFearState state = new PlayerFearState();
@@ -30,6 +32,7 @@ public class PlayerFearState {
         state.watcherSightings = tag.getInt("WatcherSightings");
         state.environmentMutationCount = tag.getInt("EnvironmentMutationCount");
         state.collapseStage = tag.getInt("CollapseStage");
+        state.mirrorEventStage = tag.getInt("MirrorEventStage");
         state.firstSpawnComplete = tag.getBoolean("FirstSpawnComplete");
         state.desktopMessageCreated = tag.getBoolean("DesktopMessageCreated");
         state.forcedCrashTriggered = tag.getBoolean("ForcedCrashTriggered");
@@ -42,6 +45,7 @@ public class PlayerFearState {
         state.nextWatcherTick = tag.getLong("NextWatcherTick");
         state.minuteProgressTick = tag.getLong("MinuteProgressTick");
         state.mirrorStartTick = tag.getLong("MirrorStartTick");
+        state.nextMirrorFootstepTick = tag.getLong("NextMirrorFootstepTick");
         return state;
     }
 
@@ -53,6 +57,7 @@ public class PlayerFearState {
         tag.putInt("WatcherSightings", watcherSightings);
         tag.putInt("EnvironmentMutationCount", environmentMutationCount);
         tag.putInt("CollapseStage", collapseStage);
+        tag.putInt("MirrorEventStage", mirrorEventStage);
         tag.putBoolean("FirstSpawnComplete", firstSpawnComplete);
         tag.putBoolean("DesktopMessageCreated", desktopMessageCreated);
         tag.putBoolean("ForcedCrashTriggered", forcedCrashTriggered);
@@ -65,6 +70,7 @@ public class PlayerFearState {
         tag.putLong("NextWatcherTick", nextWatcherTick);
         tag.putLong("MinuteProgressTick", minuteProgressTick);
         tag.putLong("MirrorStartTick", mirrorStartTick);
+        tag.putLong("NextMirrorFootstepTick", nextMirrorFootstepTick);
         return tag;
     }
 
@@ -118,6 +124,14 @@ public class PlayerFearState {
 
     public void setCollapseStage(int collapseStage) {
         this.collapseStage = Math.max(0, collapseStage);
+    }
+
+    public int mirrorEventStage() {
+        return mirrorEventStage;
+    }
+
+    public void setMirrorEventStage(int mirrorEventStage) {
+        this.mirrorEventStage = Math.max(0, mirrorEventStage);
     }
 
     public boolean firstSpawnComplete() {
@@ -214,5 +228,13 @@ public class PlayerFearState {
 
     public void setMirrorStartTick(long mirrorStartTick) {
         this.mirrorStartTick = mirrorStartTick;
+    }
+
+    public long nextMirrorFootstepTick() {
+        return nextMirrorFootstepTick;
+    }
+
+    public void setNextMirrorFootstepTick(long nextMirrorFootstepTick) {
+        this.nextMirrorFootstepTick = nextMirrorFootstepTick;
     }
 }

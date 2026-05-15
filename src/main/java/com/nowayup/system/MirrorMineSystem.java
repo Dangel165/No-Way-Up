@@ -16,12 +16,15 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
 public final class MirrorMineSystem {
     public static final ResourceKey<net.minecraft.world.level.Level> MIRROR_LEVEL = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(NoWayUpMod.MOD_ID, "mirror_mine"));
     public static final BlockPos MIRROR_POS = new BlockPos(128, -32, 0);
     private static final BlockPos DESCENT_EXIT_POS = MIRROR_POS.offset(0, -20, -18);
+    private static final BlockPos FALSE_DESCENT_DOOR_POS = MIRROR_POS.offset(0, -8, -13);
 
     private MirrorMineSystem() {
     }
@@ -45,6 +48,8 @@ public final class MirrorMineSystem {
         buildMirrorMine(level);
         state.setMirrorEntered(true);
         state.setMirrorStartTick(level.getGameTime());
+        state.setMirrorEventStage(0);
+        state.setNextMirrorFootstepTick(level.getGameTime() + 100L);
         state.addFear(50);
         player.teleportTo(level, MIRROR_POS.getX() + 0.5, MIRROR_POS.getY(), MIRROR_POS.getZ() + 0.5, player.getYRot() + 180.0F, 0.0F);
         player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 45, 0, false, false));
@@ -60,6 +65,8 @@ public final class MirrorMineSystem {
 
         ServerLevel level = player.serverLevel();
         long mirrorTicks = level.getGameTime() - state.mirrorStartTick();
+        tickMirrorFootsteps(player, state, level.getGameTime());
+        tickMirrorEvents(player, state, mirrorTicks);
         int targetStage = (int) Math.min(5, mirrorTicks / 2400L);
         if (targetStage > state.collapseStage()) {
             applyCollapseStage(level, targetStage);
@@ -70,8 +77,41 @@ public final class MirrorMineSystem {
 
         if (!state.descentEndingComplete() && player.blockPosition().distSqr(DESCENT_EXIT_POS) < 9.0) {
             triggerDescentEnding(player, state);
+        } else if (state.mirrorEventStage() >= 3 && player.blockPosition().distSqr(FALSE_DESCENT_DOOR_POS) < 6.0) {
+            triggerFalseDoor(player);
         } else if (!state.loopEndingComplete() && player.getY() > MIRROR_POS.getY() + 10 && state.collapseStage() >= 2) {
             triggerLoopEnding(player, state);
+        }
+    }
+
+    private static void tickMirrorFootsteps(ServerPlayer player, PlayerFearState state, long gameTime) {
+        if (gameTime < state.nextMirrorFootstepTick()) {
+            return;
+        }
+        BlockPos behind = player.blockPosition().relative(player.getDirection().getOpposite(), 3);
+        player.serverLevel().playSound(null, behind, SoundEvents.DEEPSLATE_STEP, SoundSource.AMBIENT, 0.9F, 0.55F);
+        if (player.getRandom().nextInt(3) == 0) {
+            player.displayClientMessage(Component.literal("Your steps are late."), true);
+        }
+        state.setNextMirrorFootstepTick(gameTime + 80L + player.getRandom().nextInt(180));
+    }
+
+    private static void tickMirrorEvents(ServerPlayer player, PlayerFearState state, long mirrorTicks) {
+        if (state.mirrorEventStage() < 1 && mirrorTicks >= 600L) {
+            placeReversedSigns(player.serverLevel());
+            player.displayClientMessage(Component.literal("This time, do not wake up."), true);
+            state.setMirrorEventStage(1);
+        }
+        if (state.mirrorEventStage() < 2 && mirrorTicks >= 1200L) {
+            String reversedName = new StringBuilder(player.getGameProfile().getName()).reverse().toString();
+            SignTextSystem.placeStandingSign(player.serverLevel(), MIRROR_POS.offset(3, 0, -5), 10, reversedName, "was here", "first.", "");
+            player.displayClientMessage(Component.literal(reversedName + " was here first."), true);
+            state.setMirrorEventStage(2);
+        }
+        if (state.mirrorEventStage() < 3 && mirrorTicks >= 1800L) {
+            placeFalseDescentDoor(player.serverLevel());
+            player.displayClientMessage(Component.literal("That was not the exit."), true);
+            state.setMirrorEventStage(3);
         }
     }
 
@@ -117,6 +157,7 @@ public final class MirrorMineSystem {
 
         level.setBlock(center.offset(-2, 1, 0), Blocks.SOUL_TORCH.defaultBlockState(), 3);
         level.setBlock(center.offset(2, 1, 0), Blocks.SOUL_TORCH.defaultBlockState(), 3);
+        SignTextSystem.placeStandingSign(level, center.offset(0, 0, 5), 8, "Do not", "climb this", "time.", "");
         placeMirrorChest(level, center.offset(-3, 0, 4));
         buildDescentTunnel(level);
     }
@@ -136,6 +177,32 @@ public final class MirrorMineSystem {
             }
         }
         level.setBlock(DESCENT_EXIT_POS, Blocks.OAK_DOOR.defaultBlockState(), 3);
+    }
+
+    private static void placeReversedSigns(ServerLevel level) {
+        SignTextSystem.placeStandingSign(level, MIRROR_POS.offset(-3, 0, -5), 6, "This time,", "do not", "wake up.", "");
+        SignTextSystem.placeStandingSign(level, MIRROR_POS.offset(5, 0, 0), 12, "The lower", "path", "remembers", "less.");
+    }
+
+    private static void placeFalseDescentDoor(ServerLevel level) {
+        level.setBlock(FALSE_DESCENT_DOOR_POS, Blocks.DARK_OAK_DOOR.defaultBlockState()
+            .setValue(DoorBlock.FACING, net.minecraft.core.Direction.NORTH)
+            .setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER), 3);
+        level.setBlock(FALSE_DESCENT_DOOR_POS.above(), Blocks.DARK_OAK_DOOR.defaultBlockState()
+            .setValue(DoorBlock.FACING, net.minecraft.core.Direction.NORTH)
+            .setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), 3);
+        level.setBlock(FALSE_DESCENT_DOOR_POS.north(), Blocks.COBBLED_DEEPSLATE.defaultBlockState(), 3);
+        level.setBlock(FALSE_DESCENT_DOOR_POS.north().above(), Blocks.COBBLED_DEEPSLATE.defaultBlockState(), 3);
+        SignTextSystem.placeStandingSign(level, FALSE_DESCENT_DOOR_POS.south(), 8, "That was", "not the", "exit.", "");
+    }
+
+    private static void triggerFalseDoor(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        level.setBlock(FALSE_DESCENT_DOOR_POS.south(), Blocks.COBBLED_DEEPSLATE.defaultBlockState(), 3);
+        level.setBlock(FALSE_DESCENT_DOOR_POS.south().above(), Blocks.COBBLED_DEEPSLATE.defaultBlockState(), 3);
+        player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0, false, false));
+        player.displayClientMessage(Component.literal("That was not the exit."), true);
+        level.playSound(null, player.blockPosition(), SoundEvents.WOODEN_DOOR_CLOSE, SoundSource.BLOCKS, 1.0F, 0.4F);
     }
 
     private static void placeMirrorChest(ServerLevel level, BlockPos pos) {
