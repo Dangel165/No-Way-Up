@@ -2,7 +2,10 @@ package com.nowayup.system;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StandingSignBlock;
@@ -25,6 +28,12 @@ public final class SignTextSystem {
             sign.setText(text, true);
             sign.setChanged();
             level.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), 3);
+            Packet<ClientGamePacketListener> packet = sign.getUpdatePacket();
+            if (packet != null) {
+                for (ServerPlayer player : level.players()) {
+                    player.connection.send(packet);
+                }
+            }
         }
     }
 }

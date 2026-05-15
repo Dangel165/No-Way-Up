@@ -182,6 +182,10 @@ public final class MirrorMineSystem {
     private static void placeReversedSigns(ServerLevel level) {
         SignTextSystem.placeStandingSign(level, MIRROR_POS.offset(-3, 0, -5), 6, "This time,", "do not", "wake up.", "");
         SignTextSystem.placeStandingSign(level, MIRROR_POS.offset(5, 0, 0), 12, "The lower", "path", "remembers", "less.");
+        level.getServer().execute(() -> {
+            SignTextSystem.placeStandingSign(level, MIRROR_POS.offset(-3, 0, -5), 6, "This time,", "do not", "wake up.", "");
+            SignTextSystem.placeStandingSign(level, MIRROR_POS.offset(5, 0, 0), 12, "The lower", "path", "remembers", "less.");
+        });
     }
 
     private static void placeFalseDescentDoor(ServerLevel level) {
@@ -194,6 +198,7 @@ public final class MirrorMineSystem {
         level.setBlock(FALSE_DESCENT_DOOR_POS.north(), Blocks.COBBLED_DEEPSLATE.defaultBlockState(), 3);
         level.setBlock(FALSE_DESCENT_DOOR_POS.north().above(), Blocks.COBBLED_DEEPSLATE.defaultBlockState(), 3);
         SignTextSystem.placeStandingSign(level, FALSE_DESCENT_DOOR_POS.south(), 8, "That was", "not the", "exit.", "");
+        level.getServer().execute(() -> SignTextSystem.placeStandingSign(level, FALSE_DESCENT_DOOR_POS.south(), 8, "That was", "not the", "exit.", ""));
     }
 
     private static void triggerFalseDoor(ServerPlayer player) {
