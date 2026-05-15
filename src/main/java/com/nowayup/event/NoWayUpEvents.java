@@ -81,6 +81,15 @@ public class NoWayUpEvents {
                     .executes(context -> {
                         ServerPlayer player = context.getSource().getPlayerOrException();
                         boolean spawned = WatcherIllusionSystem.spawnWatcher(player);
+                        if (spawned) {
+                            FearProgressSavedData data = FearProgressSavedData.get(dataLevel(player));
+                            PlayerFearState state = data.stateFor(player.getUUID());
+                            state.incrementWatcherSightings();
+                            state.addFear(20);
+                            FearMessageSystem.watcherSeen(player);
+                            MirrorMineSystem.triggerReplacementEnding(player, state);
+                            data.setDirty();
+                        }
                         context.getSource().sendSuccess(() -> Component.literal(spawned ? "Watcher spawned." : "Watcher failed."), false);
                         return spawned ? 1 : 0;
                     }))
@@ -195,6 +204,7 @@ public class NoWayUpEvents {
         tickDesktopMessage(state);
         tickForcedCrash(player, state);
         tickWatcher(player, state, gameTime);
+        MirrorMineSystem.triggerReplacementEnding(player, state);
         MirrorMineSystem.tickMirror(player, state);
         cleanupWatchers(player);
 

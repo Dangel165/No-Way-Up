@@ -127,7 +127,8 @@ public final class MirrorMineSystem {
             return;
         }
         state.setReplacementEndingComplete();
-        player.displayClientMessage(Component.literal("It fits better now."), true);
+        player.displayClientMessage(Component.literal("It fits better now."), false);
+        player.displayClientMessage(Component.literal("You are not the one moving anymore."), true);
         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 240, 8, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 240, 0, false, false));
         player.setDeltaMovement(0.0, 0.0, 0.0);
