@@ -26,6 +26,7 @@ public final class MineshaftPrisonSystem {
 
     public static void buildStartingChamber(ServerLevel level) {
         BlockPos center = START_POS;
+        clearStartingContainers(level);
 
         for (int x = -5; x <= 5; x++) {
             for (int y = -1; y <= 4; y++) {
@@ -274,5 +275,21 @@ public final class MineshaftPrisonSystem {
             }
         }
         return count;
+    }
+
+    private static void clearStartingContainers(ServerLevel level) {
+        clearContainer(level, START_POS.offset(0, 0, 4));
+        clearContainer(level, START_POS.offset(-3, 0, -3));
+        clearContainer(level, START_POS.offset(3, 0, -3));
+        clearContainer(level, START_POS.offset(3, 0, 3));
+        clearContainer(level, SUPPLY_CHEST_POS);
+    }
+
+    private static void clearContainer(ServerLevel level, BlockPos pos) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof Container container) {
+            container.clearContent();
+            blockEntity.setChanged();
+        }
     }
 }

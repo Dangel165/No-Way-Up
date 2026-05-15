@@ -276,7 +276,7 @@ public class NoWayUpEvents {
             && player.getY() > MineshaftPrisonSystem.SURFACE_ESCAPE_Y) {
             state.incrementFakeExitCount();
             state.addFear(10);
-            if (player.getY() > MineshaftPrisonSystem.MIRROR_ESCAPE_Y || state.fakeExitCount() >= 3 || MirrorMineSystem.shouldEnterMirror(state)) {
+            if (shouldForceMirrorFromEscape(player, state)) {
                 MirrorMineSystem.enterMirror(player, state);
                 return true;
             }
@@ -288,7 +288,7 @@ public class NoWayUpEvents {
         if (!state.mirrorEntered() && MineshaftPrisonSystem.isInsideMineRegion(player) && MineshaftPrisonSystem.reachedFalseExit(player, state.fakeExitCount())) {
             state.incrementFakeExitCount();
             state.addFear(10);
-            if (MirrorMineSystem.shouldEnterMirror(state)) {
+            if (shouldForceMirrorFromEscape(player, state)) {
                 MirrorMineSystem.enterMirror(player, state);
                 return true;
             }
@@ -297,6 +297,12 @@ public class NoWayUpEvents {
             return true;
         }
         return false;
+    }
+
+    private static boolean shouldForceMirrorFromEscape(ServerPlayer player, PlayerFearState state) {
+        return player.getY() > MineshaftPrisonSystem.MIRROR_ESCAPE_Y
+            || state.fakeExitCount() >= 3
+            || MirrorMineSystem.shouldEnterMirror(state);
     }
 
     private static boolean recoverEscapedPlayer(ServerPlayer player, PlayerFearState state) {
