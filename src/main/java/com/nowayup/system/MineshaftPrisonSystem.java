@@ -89,7 +89,9 @@ public final class MineshaftPrisonSystem {
     }
 
     public static void updateSupplyChest(ServerLevel level) {
-        level.setBlock(SUPPLY_CHEST_POS, Blocks.CHEST.defaultBlockState(), 3);
+        if (!level.getBlockState(SUPPLY_CHEST_POS).is(Blocks.CHEST)) {
+            level.setBlock(SUPPLY_CHEST_POS, Blocks.CHEST.defaultBlockState(), 3);
+        }
         BlockEntity chest = level.getBlockEntity(SUPPLY_CHEST_POS);
         if (chest instanceof Container container) {
             int targetCount = Math.max(1, Math.min(container.getContainerSize(), level.getServer().getPlayerCount()));
@@ -236,7 +238,9 @@ public final class MineshaftPrisonSystem {
     }
 
     private static void placeMessageChest(ServerLevel level, BlockPos pos, int depth) {
-        level.setBlock(pos, Blocks.CHEST.defaultBlockState(), 3);
+        if (!level.getBlockState(pos).is(Blocks.CHEST)) {
+            level.setBlock(pos, Blocks.CHEST.defaultBlockState(), 3);
+        }
         BlockEntity chest = level.getBlockEntity(pos);
         if (chest instanceof Container container) {
             LoreBookSystem.addMessageBook(container, depth % 2);
@@ -253,7 +257,9 @@ public final class MineshaftPrisonSystem {
     }
 
     private static void placeLoreChest(ServerLevel level, BlockPos pos, int loreIndex) {
-        level.setBlock(pos, Blocks.CHEST.defaultBlockState(), 3);
+        if (!level.getBlockState(pos).is(Blocks.CHEST)) {
+            level.setBlock(pos, Blocks.CHEST.defaultBlockState(), 3);
+        }
         BlockEntity chest = level.getBlockEntity(pos);
         if (chest instanceof Container container) {
             LoreBookSystem.addLoreBook(container, loreIndex);

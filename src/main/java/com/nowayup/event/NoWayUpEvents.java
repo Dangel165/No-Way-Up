@@ -232,12 +232,12 @@ public class NoWayUpEvents {
         FearProgressSavedData data = FearProgressSavedData.get(dataLevel(player));
         PlayerFearState state = data.stateFor(player.getUUID());
 
-        if (recoverEscapedPlayer(player, state)) {
+        if (redirectFalseEscape(player, state)) {
             data.setDirty();
             return;
         }
 
-        if (redirectFalseEscape(player, state)) {
+        if (recoverEscapedPlayer(player, state)) {
             data.setDirty();
             return;
         }
@@ -311,7 +311,6 @@ public class NoWayUpEvents {
         }
 
         ServerLevel level = dataLevel(player);
-        MineshaftPrisonSystem.buildStartingChamber(level);
         MineshaftPrisonSystem.buildNoSurfaceColumn(level);
         MineshaftPrisonSystem.updateSupplyChest(level);
         state.addFear(5);
