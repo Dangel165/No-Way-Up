@@ -207,6 +207,7 @@ public class NoWayUpEvents {
             player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
             state.setFirstSpawnComplete();
             state.resetEventTimers(level.getGameTime());
+            state.startWakeSequence(level.getGameTime());
         } else {
             ensureMineReady(level, data);
             state.incrementReconnectCount();
@@ -247,6 +248,7 @@ public class NoWayUpEvents {
         }
 
         tickProgress(level, state);
+        tickWakeSequence(player, state, gameTime);
         EnvironmentMutationSystem.applyLateMutation(level, state);
         tickAudio(player, state, gameTime);
         tickWhispers(player, state, gameTime);
@@ -265,6 +267,38 @@ public class NoWayUpEvents {
         if (state.minuteProgressTick() <= 0L || gameTime >= state.minuteProgressTick()) {
             state.addFear(1);
             state.setMinuteProgressTick(gameTime + 1200L);
+        }
+    }
+
+    private static void tickWakeSequence(ServerPlayer player, PlayerFearState state, long gameTime) {
+        if (state.wakeSequenceStartTick() <= 0L || state.wakeSequenceStage() >= 99) {
+            return;
+        }
+
+        long elapsed = gameTime - state.wakeSequenceStartTick();
+        if (state.wakeSequenceStage() < 1 && elapsed >= 20L) {
+            player.displayClientMessage(Component.literal("You will never get out."), false);
+            player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.AMBIENT_CAVE.value(), SoundSource.AMBIENT, 1.0F, 0.45F);
+            state.addFear(10);
+            state.setWakeSequenceStage(1);
+        }
+        if (state.wakeSequenceStage() < 2 && elapsed >= 60L) {
+            FearMessageSystem.nameCall(player);
+            player.serverLevel().playSound(null, player.blockPosition().offset(0, 0, -4), SoundEvents.WOODEN_DOOR_CLOSE, SoundSource.AMBIENT, 0.9F, 0.5F);
+            state.setWakeSequenceStage(2);
+        }
+        if (state.wakeSequenceStage() < 3 && elapsed >= 120L) {
+            WatcherIllusionSystem.spawnWatcher(player);
+            player.displayClientMessage(Component.literal("It found the new start."), true);
+            state.setWakeSequenceStage(3);
+        }
+        if (state.wakeSequenceStage() < 4 && elapsed >= 200L) {
+            EnvironmentMutationSystem.applyLateMutation(player.serverLevel(), state);
+            player.displayClientMessage(Component.literal("The mine starts again."), true);
+            state.setWakeSequenceStage(4);
+        }
+        if (elapsed >= 300L) {
+            state.stopWakeSequence();
         }
     }
 

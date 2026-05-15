@@ -23,6 +23,8 @@ public class PlayerFearState {
     private long minuteProgressTick;
     private long mirrorStartTick;
     private long nextMirrorFootstepTick;
+    private long wakeSequenceStartTick;
+    private int wakeSequenceStage;
 
     public static PlayerFearState load(CompoundTag tag) {
         PlayerFearState state = new PlayerFearState();
@@ -46,6 +48,8 @@ public class PlayerFearState {
         state.minuteProgressTick = tag.getLong("MinuteProgressTick");
         state.mirrorStartTick = tag.getLong("MirrorStartTick");
         state.nextMirrorFootstepTick = tag.getLong("NextMirrorFootstepTick");
+        state.wakeSequenceStartTick = tag.getLong("WakeSequenceStartTick");
+        state.wakeSequenceStage = tag.getInt("WakeSequenceStage");
         return state;
     }
 
@@ -71,6 +75,8 @@ public class PlayerFearState {
         tag.putLong("MinuteProgressTick", minuteProgressTick);
         tag.putLong("MirrorStartTick", mirrorStartTick);
         tag.putLong("NextMirrorFootstepTick", nextMirrorFootstepTick);
+        tag.putLong("WakeSequenceStartTick", wakeSequenceStartTick);
+        tag.putInt("WakeSequenceStage", wakeSequenceStage);
         return tag;
     }
 
@@ -225,6 +231,29 @@ public class PlayerFearState {
         resetDescentEndingComplete();
         resetReplacementEndingComplete();
         resetEventTimers(gameTime);
+        startWakeSequence(gameTime);
+    }
+
+    public void startWakeSequence(long gameTime) {
+        wakeSequenceStartTick = gameTime;
+        wakeSequenceStage = 0;
+    }
+
+    public long wakeSequenceStartTick() {
+        return wakeSequenceStartTick;
+    }
+
+    public int wakeSequenceStage() {
+        return wakeSequenceStage;
+    }
+
+    public void setWakeSequenceStage(int wakeSequenceStage) {
+        this.wakeSequenceStage = Math.max(0, wakeSequenceStage);
+    }
+
+    public void stopWakeSequence() {
+        wakeSequenceStartTick = 0L;
+        wakeSequenceStage = 99;
     }
 
     public long nextAudioTick() {
