@@ -29,9 +29,24 @@ public final class NoWayUpNetwork {
             FearHudPacket::decode,
             FearHudPacket::handle
         );
+        CHANNEL.registerMessage(
+            packetId++,
+            ScareActionPacket.class,
+            ScareActionPacket::encode,
+            ScareActionPacket::decode,
+            ScareActionPacket::handle
+        );
     }
 
     public static void sendFearHud(ServerPlayer player, FearHudPacket packet) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    public static void sendDesktopScare(ServerPlayer player) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), ScareActionPacket.desktopMessage());
+    }
+
+    public static void sendClientCrash(ServerPlayer player) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), ScareActionPacket.clientCrash());
     }
 }

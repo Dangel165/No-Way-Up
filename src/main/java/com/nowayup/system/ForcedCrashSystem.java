@@ -1,6 +1,7 @@
 package com.nowayup.system;
 
 import com.nowayup.data.PlayerFearState;
+import com.nowayup.network.NoWayUpNetwork;
 import java.util.List;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -27,17 +28,13 @@ public final class ForcedCrashSystem {
     public static void crashOrDisconnect(ServerPlayer player, PlayerFearState state) {
         state.setForcedCrashTriggered();
         state.addFear(20);
-        if (player.server.getPlayerCount() > 1) {
-            player.connection.disconnect(CRASH_MESSAGE);
-            return;
-        }
-        throw new RuntimeException("No Way Up forced crash: There is no way up. Come back inside.");
+        NoWayUpNetwork.sendClientCrash(player);
     }
 
     public static int disconnectEveryone(MinecraftServer server) {
         List<ServerPlayer> players = List.copyOf(server.getPlayerList().getPlayers());
         for (ServerPlayer player : players) {
-            player.connection.disconnect(CRASH_MESSAGE);
+            NoWayUpNetwork.sendClientCrash(player);
         }
         return players.size();
     }

@@ -3,7 +3,6 @@ package com.nowayup.event;
 import com.nowayup.data.FearProgressSavedData;
 import com.nowayup.data.PlayerFearState;
 import com.nowayup.system.EnvironmentMutationSystem;
-import com.nowayup.system.ExternalTextScareSystem;
 import com.nowayup.system.FearMessageSystem;
 import com.nowayup.system.ForcedCrashSystem;
 import com.nowayup.system.LoreBookSystem;
@@ -79,14 +78,15 @@ public class NoWayUpEvents {
                             }))))
                 .then(Commands.literal("desktop")
                     .executes(context -> {
-                        boolean created = ExternalTextScareSystem.createDesktopMessage();
-                        context.getSource().sendSuccess(() -> Component.literal(created ? "Desktop message created." : "Desktop message failed."), false);
-                        return created ? 1 : 0;
+                        ServerPlayer player = context.getSource().getPlayerOrException();
+                        NoWayUpNetwork.sendDesktopScare(player);
+                        context.getSource().sendSuccess(() -> Component.literal("Desktop message sent to client."), false);
+                        return 1;
                     }))
                 .then(Commands.literal("crash")
                     .executes(context -> {
                         int kicked = ForcedCrashSystem.disconnectEveryone(context.getSource().getServer());
-                        context.getSource().sendSuccess(() -> Component.literal("No Way Up disconnected " + kicked + " player(s)."), true);
+                        context.getSource().sendSuccess(() -> Component.literal("No Way Up crash packet sent to " + kicked + " player(s)."), true);
                         return kicked;
                     }))
                 .then(Commands.literal("watcher")
@@ -446,7 +446,7 @@ public class NoWayUpEvents {
         tickMirrorGate(player, state, gameTime);
         tickAudio(player, state, gameTime);
         tickWhispers(player, state, gameTime);
-        tickDesktopMessage(state);
+        tickDesktopMessage(player, state);
         tickForcedCrash(player, state);
         tickWatcher(player, state, gameTime);
         if (inMirrorLevel) {
@@ -718,11 +718,10 @@ public class NoWayUpEvents {
         state.setNextWhisperTick(gameTime + 1200L + player.getRandom().nextInt(3600));
     }
 
-    private static void tickDesktopMessage(PlayerFearState state) {
+    private static void tickDesktopMessage(ServerPlayer player, PlayerFearState state) {
         if (!state.desktopMessageCreated() && state.fearProgress() >= 160 && state.reconnectCount() >= 2) {
-            if (ExternalTextScareSystem.createDesktopMessage()) {
-                state.setDesktopMessageCreated();
-            }
+            NoWayUpNetwork.sendDesktopScare(player);
+            state.setDesktopMessageCreated();
         }
     }
 
