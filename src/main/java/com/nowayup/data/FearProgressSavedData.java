@@ -13,6 +13,7 @@ public class FearProgressSavedData extends SavedData {
     private static final String DATA_NAME = "nowayup_fear_progress";
 
     private final Map<UUID, PlayerFearState> playerStates = new HashMap<>();
+    private boolean worldInitialized;
 
     public static FearProgressSavedData get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(FearProgressSavedData::load, FearProgressSavedData::new, DATA_NAME);
@@ -20,6 +21,7 @@ public class FearProgressSavedData extends SavedData {
 
     public static FearProgressSavedData load(CompoundTag tag) {
         FearProgressSavedData data = new FearProgressSavedData();
+        data.worldInitialized = tag.getBoolean("WorldInitialized");
         ListTag players = tag.getList("Players", Tag.TAG_COMPOUND);
         for (int i = 0; i < players.size(); i++) {
             CompoundTag playerTag = players.getCompound(i);
@@ -33,8 +35,17 @@ public class FearProgressSavedData extends SavedData {
         return playerStates.computeIfAbsent(playerId, id -> new PlayerFearState());
     }
 
+    public boolean worldInitialized() {
+        return worldInitialized;
+    }
+
+    public void setWorldInitialized() {
+        worldInitialized = true;
+    }
+
     @Override
     public CompoundTag save(CompoundTag tag) {
+        tag.putBoolean("WorldInitialized", worldInitialized);
         ListTag players = new ListTag();
         for (Map.Entry<UUID, PlayerFearState> entry : playerStates.entrySet()) {
             CompoundTag playerTag = new CompoundTag();

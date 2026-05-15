@@ -140,7 +140,10 @@ public class NoWayUpEvents {
         PlayerFearState state = data.stateFor(player.getUUID());
 
         if (!state.firstSpawnComplete()) {
-            MineshaftPrisonSystem.buildStartingChamber(level);
+            if (!data.worldInitialized()) {
+                MineshaftPrisonSystem.buildStartingChamber(level);
+                data.setWorldInitialized();
+            }
             player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
             state.setFirstSpawnComplete();
             state.setMinuteProgressTick(level.getGameTime() + 1200L);
@@ -178,7 +181,7 @@ public class NoWayUpEvents {
         tickAudio(player, state, gameTime);
         tickWhispers(player, state, gameTime);
         tickDesktopMessage(state);
-        tickForcedCrash(state);
+        tickForcedCrash(player, state);
         tickWatcher(player, state, gameTime);
         MirrorMineSystem.tickMirror(player, state);
         cleanupWatchers(player);
@@ -249,9 +252,9 @@ public class NoWayUpEvents {
         }
     }
 
-    private static void tickForcedCrash(PlayerFearState state) {
+    private static void tickForcedCrash(ServerPlayer player, PlayerFearState state) {
         if (ForcedCrashSystem.shouldTrigger(state)) {
-            ForcedCrashSystem.crash(state);
+            ForcedCrashSystem.crashOrDisconnect(player, state);
         }
     }
 
