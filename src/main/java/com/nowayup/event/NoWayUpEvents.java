@@ -73,7 +73,9 @@ public class NoWayUpEvents {
                     }))
                 .then(Commands.literal("crash")
                     .executes(context -> {
-                        throw new RuntimeException("No Way Up forced crash: There is no way up.");
+                        int kicked = ForcedCrashSystem.disconnectEveryone(context.getSource().getServer());
+                        context.getSource().sendSuccess(() -> Component.literal("No Way Up disconnected " + kicked + " player(s)."), true);
+                        return kicked;
                     }))
                 .then(Commands.literal("watcher")
                     .executes(context -> {

@@ -1,10 +1,19 @@
 package com.nowayup.system;
 
 import com.nowayup.data.PlayerFearState;
+import java.util.List;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class ForcedCrashSystem {
+    private static final Component CRASH_MESSAGE = Component.literal("""
+        Internal Exception: java.lang.IllegalStateException: There is no way up.
+
+        The mine kept the others.
+        Come back inside.
+        """);
+
     private ForcedCrashSystem() {
     }
 
@@ -19,14 +28,17 @@ public final class ForcedCrashSystem {
         state.setForcedCrashTriggered();
         state.addFear(20);
         if (player.server.getPlayerCount() > 1) {
-            player.connection.disconnect(Component.literal("""
-                Internal Exception: java.lang.IllegalStateException: There is no way up.
-
-                The mine kept the others.
-                Come back inside.
-                """));
+            player.connection.disconnect(CRASH_MESSAGE);
             return;
         }
         throw new RuntimeException("No Way Up forced crash: There is no way up. Come back inside.");
+    }
+
+    public static int disconnectEveryone(MinecraftServer server) {
+        List<ServerPlayer> players = List.copyOf(server.getPlayerList().getPlayers());
+        for (ServerPlayer player : players) {
+            player.connection.disconnect(CRASH_MESSAGE);
+        }
+        return players.size();
     }
 }
