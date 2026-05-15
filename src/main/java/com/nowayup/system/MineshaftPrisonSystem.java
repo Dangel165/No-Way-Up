@@ -13,7 +13,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.BarrelBlock;
 
 public final class MineshaftPrisonSystem {
-    public static final BlockPos START_POS = new BlockPos(0, -32, 0);
+    public static final BlockPos START_POS = new BlockPos(256, -32, 256);
     public static final BlockPos SUPPLY_CHEST_POS = START_POS.offset(-3, 0, 2);
     public static final double SURFACE_ESCAPE_Y = START_POS.getY() + 20.0;
     public static final double MIRROR_ESCAPE_Y = START_POS.getY() + 44.0;
@@ -119,13 +119,14 @@ public final class MineshaftPrisonSystem {
 
     public static BlockPos segmentCenter(int depth) {
         int lane = Math.floorMod(depth, 4);
-        int x = switch (lane) {
+        int xOffset = switch (lane) {
             case 1 -> SEGMENT_SPACING_X;
             case 2 -> 0;
             case 3 -> -SEGMENT_SPACING_X;
             default -> 0;
         };
-        int z = -depth * SEGMENT_SPACING_Z;
+        int x = START_POS.getX() + xOffset;
+        int z = START_POS.getZ() - depth * SEGMENT_SPACING_Z;
         int y = START_POS.getY() - depth * SEGMENT_DROP_Y;
         return new BlockPos(x, y, z);
     }
@@ -134,9 +135,9 @@ public final class MineshaftPrisonSystem {
         BlockPos pos = player.blockPosition();
         return pos.getY() <= START_POS.getY() + 24
             && pos.getY() >= START_POS.getY() - 280
-            && Math.abs(pos.getX()) <= 160
-            && pos.getZ() <= 48
-            && pos.getZ() >= -420;
+            && Math.abs(pos.getX() - START_POS.getX()) <= 160
+            && pos.getZ() <= START_POS.getZ() + 48
+            && pos.getZ() >= START_POS.getZ() - 420;
     }
 
     public static boolean reachedFalseExit(ServerPlayer player, int depth) {
