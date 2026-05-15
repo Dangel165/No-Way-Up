@@ -24,6 +24,7 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.PlayerSetSpawnEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -154,6 +155,31 @@ public class NoWayUpEvents {
     }
 
     @SubscribeEvent
+    public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+
+        ServerLevel level = dataLevel(player);
+        FearProgressSavedData data = FearProgressSavedData.get(level);
+        PlayerFearState state = data.stateFor(player.getUUID());
+        ensureMineReady(level, data);
+        state.setFirstSpawnComplete();
+        player.server.execute(() -> {
+            player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
+            player.displayClientMessage(Component.literal("Death was not a way out."), true);
+        });
+        data.setDirty();
+    }
+
+    @SubscribeEvent
+    public void onPlayerSetSpawn(PlayerSetSpawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer && !event.isForced()) {
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
@@ -164,18 +190,12 @@ public class NoWayUpEvents {
         PlayerFearState state = data.stateFor(player.getUUID());
 
         if (!state.firstSpawnComplete()) {
-            if (!data.worldInitialized()) {
-                MineshaftPrisonSystem.buildStartingChamber(level);
-                data.setWorldInitialized();
-            }
-            MineshaftPrisonSystem.buildNoSurfaceColumn(level);
-            MineshaftPrisonSystem.updateSupplyChest(level);
+            ensureMineReady(level, data);
             player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
             state.setFirstSpawnComplete();
             state.setMinuteProgressTick(level.getGameTime() + 1200L);
         } else {
-            MineshaftPrisonSystem.buildNoSurfaceColumn(level);
-            MineshaftPrisonSystem.updateSupplyChest(level);
+            ensureMineReady(level, data);
             state.incrementReconnectCount();
             state.addFear(15);
             if (state.fearProgress() >= 100 || state.reconnectCount() >= 1) {
@@ -350,5 +370,14 @@ public class NoWayUpEvents {
     private static ServerLevel dataLevel(ServerPlayer player) {
         ServerLevel overworld = player.server.getLevel(Level.OVERWORLD);
         return overworld == null ? player.serverLevel() : overworld;
+    }
+
+    private static void ensureMineReady(ServerLevel level, FearProgressSavedData data) {
+        if (!data.worldInitialized()) {
+            MineshaftPrisonSystem.buildStartingChamber(level);
+            data.setWorldInitialized();
+        }
+        MineshaftPrisonSystem.buildNoSurfaceColumn(level);
+        MineshaftPrisonSystem.updateSupplyChest(level);
     }
 }
