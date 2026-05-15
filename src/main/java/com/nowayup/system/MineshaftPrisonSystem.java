@@ -4,6 +4,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.LadderBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.Blocks;
@@ -12,6 +14,7 @@ import net.minecraft.world.level.block.BarrelBlock;
 
 public final class MineshaftPrisonSystem {
     public static final BlockPos START_POS = new BlockPos(0, -32, 0);
+    public static final BlockPos SUPPLY_CHEST_POS = START_POS.offset(-3, 0, 2);
     private static final int SEGMENT_SPACING_X = 34;
     private static final int SEGMENT_DROP_Y = 12;
     private static final int SEGMENT_SPACING_Z = 18;
@@ -53,6 +56,22 @@ public final class MineshaftPrisonSystem {
         placeLoreChest(level, center.offset(-3, 0, -3), 1);
         placeLoreChest(level, center.offset(3, 0, -3), 2);
         placeLoreChest(level, center.offset(3, 0, 3), 3);
+        updateSupplyChest(level);
+    }
+
+    public static void updateSupplyChest(ServerLevel level) {
+        level.setBlock(SUPPLY_CHEST_POS, Blocks.CHEST.defaultBlockState(), 3);
+        BlockEntity chest = level.getBlockEntity(SUPPLY_CHEST_POS);
+        if (chest instanceof Container container) {
+            int targetCount = Math.max(1, Math.min(container.getContainerSize(), level.getServer().getPlayerCount()));
+            int currentCount = countIronPickaxes(container);
+            for (int slot = 0; slot < container.getContainerSize() && currentCount < targetCount; slot++) {
+                if (container.getItem(slot).isEmpty()) {
+                    container.setItem(slot, new ItemStack(Items.IRON_PICKAXE));
+                    currentCount++;
+                }
+            }
+        }
     }
 
     public static void sendToStart(ServerPlayer player) {
@@ -210,5 +229,15 @@ public final class MineshaftPrisonSystem {
         if (chest instanceof Container container) {
             LoreBookSystem.addLoreBook(container, loreIndex);
         }
+    }
+
+    private static int countIronPickaxes(Container container) {
+        int count = 0;
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            if (container.getItem(slot).is(Items.IRON_PICKAXE)) {
+                count++;
+            }
+        }
+        return count;
     }
 }

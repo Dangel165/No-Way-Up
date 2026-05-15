@@ -144,10 +144,12 @@ public class NoWayUpEvents {
                 MineshaftPrisonSystem.buildStartingChamber(level);
                 data.setWorldInitialized();
             }
+            MineshaftPrisonSystem.updateSupplyChest(level);
             player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
             state.setFirstSpawnComplete();
             state.setMinuteProgressTick(level.getGameTime() + 1200L);
         } else {
+            MineshaftPrisonSystem.updateSupplyChest(level);
             state.incrementReconnectCount();
             state.addFear(15);
             if (state.fearProgress() >= 100 || state.reconnectCount() >= 1) {
