@@ -58,6 +58,33 @@ public final class MineshaftPrisonSystem {
         placeLoreChest(level, center.offset(3, 0, -3), 2);
         placeLoreChest(level, center.offset(3, 0, 3), 3);
         updateSupplyChest(level);
+        buildNoSurfaceColumn(level);
+    }
+
+    public static void buildNoSurfaceColumn(ServerLevel level) {
+        BlockPos center = START_POS;
+        for (int y = 5; y <= 96; y++) {
+            for (int x = -6; x <= 6; x++) {
+                for (int z = -6; z <= 6; z++) {
+                    BlockPos pos = center.offset(x, y, z);
+                    boolean shell = Math.abs(x) == 6 || Math.abs(z) == 6;
+                    boolean support = (Math.abs(x) == 4 || Math.abs(z) == 4) && y % 7 == 0;
+                    if (shell || y % 11 == 0) {
+                        level.setBlock(pos, Blocks.DEEPSLATE.defaultBlockState(), 3);
+                    } else if (support) {
+                        level.setBlock(pos, Blocks.OAK_LOG.defaultBlockState(), 3);
+                    } else if (Math.abs(x) <= 1 && Math.abs(z) <= 1) {
+                        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                    } else if (level.getRandom().nextInt(28) == 0) {
+                        level.setBlock(pos, Blocks.COBWEB.defaultBlockState(), 3);
+                    } else {
+                        level.setBlock(pos, Blocks.COBBLED_DEEPSLATE.defaultBlockState(), 3);
+                    }
+                }
+            }
+        }
+
+        SignTextSystem.placeStandingSign(level, center.offset(0, 6, 4), 8, "The surface", "was removed.", "", "Go below.");
     }
 
     public static void updateSupplyChest(ServerLevel level) {
