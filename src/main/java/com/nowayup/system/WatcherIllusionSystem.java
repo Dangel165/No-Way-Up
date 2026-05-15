@@ -6,6 +6,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -25,11 +27,11 @@ public final class WatcherIllusionSystem {
         ServerLevel level = player.serverLevel();
         Vec3 look = player.getLookAngle().normalize();
         Vec3 origin = player.position();
-        Vec3 target = origin.add(look.scale(player.getRandom().nextBoolean() ? -18.0 : 28.0));
+        Vec3 target = origin.add(look.scale(player.getRandom().nextBoolean() ? -12.0 : 14.0));
 
         HitResult hit = level.clip(new ClipContext(origin.add(0, 1.4, 0), target.add(0, 1.4, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         if (hit.getType() != HitResult.Type.MISS) {
-            target = hit.getLocation().subtract(look.scale(2.0));
+            target = hit.getLocation().subtract(look.scale(1.5));
         }
 
         ArmorStand watcher = new ArmorStand(EntityType.ARMOR_STAND, level);
@@ -52,6 +54,11 @@ public final class WatcherIllusionSystem {
         watcher.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Items.LEATHER_LEGGINGS));
         watcher.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.LEATHER_BOOTS));
 
-        return level.addFreshEntity(watcher);
+        boolean added = level.addFreshEntity(watcher);
+        if (added) {
+            level.playSound(null, watcher.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.AMBIENT, 1.0F, 0.45F);
+            player.displayClientMessage(net.minecraft.network.chat.Component.literal("It is still there."), true);
+        }
+        return added;
     }
 }

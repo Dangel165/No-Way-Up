@@ -11,9 +11,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.Container;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoorBlock;
@@ -69,7 +71,7 @@ public final class MirrorMineSystem {
         tickMirrorEvents(player, state, mirrorTicks);
         int targetStage = (int) Math.min(5, mirrorTicks / 2400L);
         if (targetStage > state.collapseStage()) {
-            applyCollapseStage(level, targetStage);
+            applyCollapseStage(level, player, targetStage);
             state.setCollapseStage(targetStage);
             player.displayClientMessage(Component.literal(collapseMessage(targetStage)), true);
             level.playSound(null, player.blockPosition(), SoundEvents.DEEPSLATE_BREAK, SoundSource.BLOCKS, 1.0F, 0.55F);
@@ -218,8 +220,9 @@ public final class MirrorMineSystem {
         }
     }
 
-    private static void applyCollapseStage(ServerLevel level, int stage) {
+    private static void applyCollapseStage(ServerLevel level, ServerPlayer player, int stage) {
         BlockPos center = MIRROR_POS;
+        collapseAroundPlayer(level, player, stage);
         if (stage >= 1) {
             level.setBlock(center.offset(0, 4, 5), Blocks.GRAVEL.defaultBlockState(), 3);
             level.setBlock(center.offset(1, 4, 5), Blocks.GRAVEL.defaultBlockState(), 3);
@@ -241,6 +244,30 @@ public final class MirrorMineSystem {
             level.setBlock(center.offset(5, 0, 0), Blocks.AIR.defaultBlockState(), 3);
             level.setBlock(center.offset(5, 1, 0), Blocks.AIR.defaultBlockState(), 3);
         }
+    }
+
+    private static void collapseAroundPlayer(ServerLevel level, ServerPlayer player, int stage) {
+        BlockPos base = player.blockPosition();
+        for (int i = -2; i <= 2; i++) {
+            BlockPos fallPos = base.offset(i, 5 + stage % 2, -2 - stage % 3);
+            level.setBlock(fallPos, stage % 2 == 0 ? Blocks.COBBLED_DEEPSLATE.defaultBlockState() : Blocks.GRAVEL.defaultBlockState(), 3);
+            FallingBlockEntity falling = FallingBlockEntity.fall(level, fallPos, level.getBlockState(fallPos));
+            falling.time = 1;
+        }
+
+        for (int i = -1; i <= 1; i++) {
+            BlockPos crack = base.offset(i, 0, 2 + stage);
+            if (level.isEmptyBlock(crack)) {
+                level.setBlock(crack, Blocks.COBBLED_DEEPSLATE.defaultBlockState(), 3);
+            }
+        }
+
+        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, base.getX() + 0.5, base.getY() + 1.5, base.getZ() + 0.5, 40, 2.0, 1.0, 2.0, 0.03);
+        level.sendParticles(ParticleTypes.ASH, base.getX() + 0.5, base.getY() + 1.2, base.getZ() + 0.5, 60, 2.5, 1.0, 2.5, 0.02);
+        player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 80, 0, false, false));
+        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 0, false, false));
+        level.playSound(null, base, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 0.7F, 0.45F);
+        level.playSound(null, base, SoundEvents.GRAVEL_FALL, SoundSource.BLOCKS, 1.0F, 0.6F);
     }
 
     private static String collapseMessage(int stage) {

@@ -320,7 +320,7 @@ public class NoWayUpEvents {
 
     private static void cleanupWatchers(ServerPlayer player) {
         for (ArmorStand watcher : player.serverLevel().getEntitiesOfClass(ArmorStand.class, player.getBoundingBox().inflate(64.0), armorStand -> armorStand.getTags().contains(WatcherIllusionSystem.WATCHER_TAG))) {
-            if (watcher.tickCount > 100 || watcher.distanceTo(player) < 16.0F) {
+            if (watcher.tickCount > 420 || watcher.distanceTo(player) < 3.0F) {
                 watcher.discard();
             }
         }
