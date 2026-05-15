@@ -48,6 +48,7 @@ public class NoWayUpEvents {
                                 FearProgressSavedData data = FearProgressSavedData.get(dataLevel(player));
                                 PlayerFearState state = data.stateFor(player.getUUID());
                                 state.addFear(IntegerArgumentType.getInteger(context, "amount"));
+                                applyDebugFearEffects(player, state);
                                 data.setDirty();
                                 context.getSource().sendSuccess(() -> Component.literal("No Way Up fear: " + state.fearProgress()), false);
                                 return state.fearProgress();
@@ -59,6 +60,7 @@ public class NoWayUpEvents {
                                 FearProgressSavedData data = FearProgressSavedData.get(dataLevel(player));
                                 PlayerFearState state = data.stateFor(player.getUUID());
                                 state.setFearProgress(IntegerArgumentType.getInteger(context, "amount"));
+                                applyDebugFearEffects(player, state);
                                 data.setDirty();
                                 context.getSource().sendSuccess(() -> Component.literal("No Way Up fear: " + state.fearProgress()), false);
                                 return state.fearProgress();
@@ -200,6 +202,21 @@ public class NoWayUpEvents {
     }
 
     private static void redirectFalseEscape(ServerPlayer player, PlayerFearState state) {
+        if (!state.mirrorEntered()
+            && state.firstSpawnComplete()
+            && player.serverLevel().dimension().equals(Level.OVERWORLD)
+            && player.getY() > MineshaftPrisonSystem.SURFACE_ESCAPE_Y) {
+            state.incrementFakeExitCount();
+            state.addFear(10);
+            if (MirrorMineSystem.shouldEnterMirror(state)) {
+                MirrorMineSystem.enterMirror(player, state);
+                return;
+            }
+            FearMessageSystem.fakeExit(player);
+            MineshaftPrisonSystem.sendDeeper(player, state.fakeExitCount());
+            return;
+        }
+
         if (!state.mirrorEntered() && MineshaftPrisonSystem.isInsideMineRegion(player) && MineshaftPrisonSystem.reachedFalseExit(player, state.fakeExitCount())) {
             state.incrementFakeExitCount();
             state.addFear(10);
@@ -209,6 +226,22 @@ public class NoWayUpEvents {
             }
             FearMessageSystem.fakeExit(player);
             MineshaftPrisonSystem.sendDeeper(player, state.fakeExitCount());
+        }
+    }
+
+    private static void applyDebugFearEffects(ServerPlayer player, PlayerFearState state) {
+        if (state.fearProgress() >= 100) {
+            EnvironmentMutationSystem.applyLateMutation(player.serverLevel(), state);
+            player.displayClientMessage(Component.literal("The mine noticed the change."), true);
+        }
+        if (state.fearProgress() >= 220) {
+            if (WatcherIllusionSystem.spawnWatcher(player)) {
+                state.incrementWatcherSightings();
+                FearMessageSystem.watcherSeen(player);
+            }
+        }
+        if (state.fearProgress() >= 260 && !state.mirrorEntered()) {
+            MirrorMineSystem.enterMirror(player, state);
         }
     }
 

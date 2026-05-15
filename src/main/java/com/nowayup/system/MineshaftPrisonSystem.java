@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.BarrelBlock;
 public final class MineshaftPrisonSystem {
     public static final BlockPos START_POS = new BlockPos(0, -32, 0);
     public static final BlockPos SUPPLY_CHEST_POS = START_POS.offset(-3, 0, 2);
+    public static final double SURFACE_ESCAPE_Y = START_POS.getY() + 20.0;
     private static final int SEGMENT_SPACING_X = 34;
     private static final int SEGMENT_DROP_Y = 12;
     private static final int SEGMENT_SPACING_Z = 18;
