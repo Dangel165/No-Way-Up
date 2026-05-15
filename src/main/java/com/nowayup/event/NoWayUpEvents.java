@@ -173,6 +173,9 @@ public class NoWayUpEvents {
         PlayerFearState state = data.stateFor(player.getUUID());
         ensureMineReady(level, data);
         state.setFirstSpawnComplete();
+        state.setMirrorEntered(false);
+        state.setCollapseStage(0);
+        state.setMirrorEventStage(0);
         state.addFear(10);
         state.resetEventTimers(level.getGameTime());
         player.server.execute(() -> {
@@ -228,6 +231,11 @@ public class NoWayUpEvents {
         long gameTime = level.getGameTime();
         FearProgressSavedData data = FearProgressSavedData.get(dataLevel(player));
         PlayerFearState state = data.stateFor(player.getUUID());
+
+        if (recoverEscapedPlayer(player, state)) {
+            data.setDirty();
+            return;
+        }
 
         if (redirectFalseEscape(player, state)) {
             data.setDirty();
@@ -289,6 +297,28 @@ public class NoWayUpEvents {
             return true;
         }
         return false;
+    }
+
+    private static boolean recoverEscapedPlayer(ServerPlayer player, PlayerFearState state) {
+        if (!state.firstSpawnComplete()) {
+            return false;
+        }
+        if (state.mirrorEntered() || !player.serverLevel().dimension().equals(Level.OVERWORLD)) {
+            return false;
+        }
+        if (MineshaftPrisonSystem.isInsideMineRegion(player) && player.getY() <= MineshaftPrisonSystem.SURFACE_ESCAPE_Y) {
+            return false;
+        }
+
+        ServerLevel level = dataLevel(player);
+        MineshaftPrisonSystem.buildStartingChamber(level);
+        MineshaftPrisonSystem.buildNoSurfaceColumn(level);
+        MineshaftPrisonSystem.updateSupplyChest(level);
+        state.addFear(5);
+        state.resetEventTimers(level.getGameTime());
+        player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
+        player.displayClientMessage(Component.literal("You will never get out."), true);
+        return true;
     }
 
     private static void applyDebugFearEffects(ServerPlayer player, PlayerFearState state) {
