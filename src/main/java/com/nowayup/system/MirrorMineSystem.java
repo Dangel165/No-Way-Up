@@ -81,7 +81,7 @@ public final class MirrorMineSystem {
             triggerDescentEnding(player, state);
         } else if (state.mirrorEventStage() >= 3 && player.blockPosition().distSqr(FALSE_DESCENT_DOOR_POS) < 6.0) {
             triggerFalseDoor(player);
-        } else if (!state.loopEndingComplete() && player.getY() > MIRROR_POS.getY() + 10 && state.collapseStage() >= 2) {
+        } else if (!state.loopEndingComplete() && player.getY() > MIRROR_POS.getY() + 6 && state.collapseStage() >= 1) {
             triggerLoopEnding(player, state);
         }
     }
@@ -289,7 +289,7 @@ public final class MirrorMineSystem {
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.END_PORTAL_SPAWN, SoundSource.AMBIENT, 0.8F, 0.7F);
     }
 
-    private static void triggerLoopEnding(ServerPlayer player, PlayerFearState state) {
+    public static void triggerLoopEnding(ServerPlayer player, PlayerFearState state) {
         state.setLoopEndingComplete();
         state.setMirrorEntered(false);
         state.setCollapseStage(0);

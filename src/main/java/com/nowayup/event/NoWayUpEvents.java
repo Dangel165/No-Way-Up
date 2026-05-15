@@ -121,6 +121,17 @@ public class NoWayUpEvents {
                         context.getSource().sendSuccess(() -> Component.literal("Entered the mirror mine."), false);
                         return 1;
                     }))
+                .then(Commands.literal("ending")
+                    .then(Commands.literal("loop")
+                        .executes(context -> {
+                            ServerPlayer player = context.getSource().getPlayerOrException();
+                            FearProgressSavedData data = FearProgressSavedData.get(dataLevel(player));
+                            PlayerFearState state = data.stateFor(player.getUUID());
+                            MirrorMineSystem.triggerLoopEnding(player, state);
+                            data.setDirty();
+                            context.getSource().sendSuccess(() -> Component.literal("Loop Ending triggered."), false);
+                            return 1;
+                        })))
                 .then(Commands.literal("start")
                     .executes(context -> {
                         ServerPlayer player = context.getSource().getPlayerOrException();
