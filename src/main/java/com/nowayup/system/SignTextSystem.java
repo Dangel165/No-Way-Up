@@ -26,6 +26,7 @@ public final class SignTextSystem {
                 text = text.setMessage(i, Component.literal(lines[i]));
             }
             sign.setText(text, true);
+            sign.setText(text, false);
             sign.setChanged();
             level.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), 3);
             Packet<ClientGamePacketListener> packet = sign.getUpdatePacket();

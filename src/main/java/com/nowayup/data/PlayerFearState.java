@@ -28,7 +28,9 @@ public class PlayerFearState {
     private long minuteProgressTick;
     private long mirrorStartTick;
     private long nextMirrorFootstepTick;
+    private long witnessEndingStartTick;
     private long wakeSequenceStartTick;
+    private int witnessEndingStage;
     private int wakeSequenceStage;
 
     public static PlayerFearState load(CompoundTag tag) {
@@ -58,7 +60,9 @@ public class PlayerFearState {
         state.minuteProgressTick = tag.getLong("MinuteProgressTick");
         state.mirrorStartTick = tag.getLong("MirrorStartTick");
         state.nextMirrorFootstepTick = tag.getLong("NextMirrorFootstepTick");
+        state.witnessEndingStartTick = tag.getLong("WitnessEndingStartTick");
         state.wakeSequenceStartTick = tag.getLong("WakeSequenceStartTick");
+        state.witnessEndingStage = tag.getInt("WitnessEndingStage");
         state.wakeSequenceStage = tag.getInt("WakeSequenceStage");
         return state;
     }
@@ -90,7 +94,9 @@ public class PlayerFearState {
         tag.putLong("MinuteProgressTick", minuteProgressTick);
         tag.putLong("MirrorStartTick", mirrorStartTick);
         tag.putLong("NextMirrorFootstepTick", nextMirrorFootstepTick);
+        tag.putLong("WitnessEndingStartTick", witnessEndingStartTick);
         tag.putLong("WakeSequenceStartTick", wakeSequenceStartTick);
+        tag.putInt("WitnessEndingStage", witnessEndingStage);
         tag.putInt("WakeSequenceStage", wakeSequenceStage);
         return tag;
     }
@@ -245,6 +251,24 @@ public class PlayerFearState {
 
     public void resetWitnessEndingComplete() {
         witnessEndingComplete = false;
+        witnessEndingStartTick = 0L;
+        witnessEndingStage = 0;
+    }
+
+    public long witnessEndingStartTick() {
+        return witnessEndingStartTick;
+    }
+
+    public void setWitnessEndingStartTick(long witnessEndingStartTick) {
+        this.witnessEndingStartTick = Math.max(0L, witnessEndingStartTick);
+    }
+
+    public int witnessEndingStage() {
+        return witnessEndingStage;
+    }
+
+    public void setWitnessEndingStage(int witnessEndingStage) {
+        this.witnessEndingStage = Math.max(0, witnessEndingStage);
     }
 
     public boolean sealEndingComplete() {

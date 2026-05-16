@@ -311,6 +311,13 @@ public class NoWayUpEvents {
         ServerLevel level = dataLevel(player);
         FearProgressSavedData data = FearProgressSavedData.get(level);
         PlayerFearState state = data.stateFor(player.getUUID());
+        if (state.witnessEndingComplete()) {
+            player.server.execute(() -> {
+                MirrorMineSystem.sendToWitnessVoid(player, state);
+                player.displayClientMessage(Component.literal("Now watch."), true);
+            });
+            return;
+        }
         if (state.descentEndingComplete()) {
             player.setGameMode(GameType.SURVIVAL);
             player.server.execute(() -> {
@@ -358,6 +365,12 @@ public class NoWayUpEvents {
         ServerLevel level = dataLevel(player);
         FearProgressSavedData data = FearProgressSavedData.get(level);
         PlayerFearState state = data.stateFor(player.getUUID());
+
+        if (state.witnessEndingComplete()) {
+            MirrorMineSystem.sendToWitnessVoid(player, state);
+            player.displayClientMessage(Component.literal("Now watch."), true);
+            return;
+        }
 
         if (state.descentEndingComplete()) {
             player.setGameMode(GameType.SURVIVAL);
@@ -421,6 +434,13 @@ public class NoWayUpEvents {
             return;
         }
 
+        if (state.witnessEndingComplete() && !inMirrorLevel) {
+            MirrorMineSystem.sendToWitnessVoid(player, state);
+            sendFearHud(player, state);
+            data.setDirty();
+            return;
+        }
+
         if (state.mirrorEntered() && !inMirrorLevel) {
             state.setMirrorEntered(false);
             state.setCollapseStage(0);
@@ -430,6 +450,13 @@ public class NoWayUpEvents {
 
         if (inMirrorLevel && state.eliasEndingComplete()) {
             MirrorMineSystem.tickEliasChamber(player, state);
+            sendFearHud(player, state);
+            data.setDirty();
+            return;
+        }
+
+        if (inMirrorLevel && state.witnessEndingComplete()) {
+            MirrorMineSystem.tickWitnessEnding(player, state, gameTime);
             sendFearHud(player, state);
             data.setDirty();
             return;
@@ -771,9 +798,11 @@ public class NoWayUpEvents {
         }
         for (ArmorStand watcher : player.serverLevel().getEntitiesOfClass(ArmorStand.class, player.getBoundingBox().inflate(64.0), armorStand -> armorStand.getTags().contains(WatcherIllusionSystem.WATCHER_TAG))) {
             boolean mirror = player.serverLevel().dimension().equals(MirrorMineSystem.MIRROR_LEVEL);
-            int maxAge = mirror ? 80 : 220;
-            float vanishDistance = mirror ? 16.0F : 5.0F;
-            if (watcher.tickCount > maxAge || watcher.distanceTo(player) < vanishDistance || isLookingAtWatcher(player, watcher)) {
+            int maxAge = mirror ? 300 : 360;
+            float vanishDistance = mirror ? 4.0F : 3.0F;
+            boolean tooCloseAfterReveal = watcher.tickCount > 80 && watcher.distanceTo(player) < vanishDistance;
+            boolean staredDownAfterReveal = watcher.tickCount > 180 && isLookingAtWatcher(player, watcher);
+            if (watcher.tickCount > maxAge || tooCloseAfterReveal || staredDownAfterReveal) {
                 watcher.discard();
             }
         }
@@ -785,7 +814,7 @@ public class NoWayUpEvents {
         }
         Vec3 look = player.getLookAngle().normalize();
         Vec3 toWatcher = watcher.position().add(0.0, 1.0, 0.0).subtract(player.getEyePosition()).normalize();
-        return look.dot(toWatcher) > 0.72D;
+        return look.dot(toWatcher) > 0.95D;
     }
 
     private static ServerLevel dataLevel(ServerPlayer player) {

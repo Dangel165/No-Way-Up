@@ -5,6 +5,7 @@ import com.nowayup.NoWayUpMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -23,6 +24,7 @@ import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -40,10 +42,13 @@ public final class MirrorMineSystem {
     private static final BlockPos LEGACY_DESCENT_EXIT_POS = MIRROR_POS.offset(0, -20, -18);
     private static final BlockPos FALSE_DESCENT_DOOR_POS = MIRROR_POS.offset(0, -8, -13);
     private static final BlockPos WITNESS_EXIT_POS = MIRROR_POS.offset(0, 0, 24);
+    private static final BlockPos WITNESS_GATE_POS = MIRROR_POS.offset(0, 0, 12);
+    private static final BlockPos WITNESS_VOID_POS = MIRROR_POS.offset(0, 28, 0);
     private static final BlockPos SEAL_GATE_POS = MIRROR_POS.offset(0, 0, 5);
     private static final BlockPos SEAL_CHAMBER_POS = MIRROR_POS.offset(24, 0, 0);
     private static final BlockPos ELIAS_CHAMBER_POS = MIRROR_POS.offset(48, -40, 0);
     private static final String WITNESS_TAG = "nowayup_witness";
+    private static final String WITNESS_ENDING_TAG = "nowayup_witness_ending";
     private static final long COLLAPSE_STAGE_TICKS = 600L;
     private static final long COLLAPSE_RUMBLE_TICKS = 100L;
     private static final long REPLACEMENT_END_TICKS = 4800L;
@@ -123,7 +128,7 @@ public final class MirrorMineSystem {
             triggerDescentChoice(player, state);
         } else if (!hasTerminalEnding(state) && state.collapseStage() >= 2 && player.isShiftKeyDown() && player.blockPosition().distSqr(SEAL_GATE_POS) < 9.0) {
             triggerSealEnding(player, state);
-        } else if (!hasTerminalEnding(state) && state.mirrorEventStage() >= 3 && player.blockPosition().distSqr(WITNESS_EXIT_POS) < 9.0) {
+        } else if (!hasTerminalEnding(state) && isAtWitnessGate(player.blockPosition())) {
             triggerWitnessEnding(player, state);
         } else if (!hasTerminalEnding(state) && player.blockPosition().distSqr(FALSE_DESCENT_DOOR_POS) < 6.0) {
             triggerFalseDoorFromInteraction(player, state);
@@ -150,6 +155,13 @@ public final class MirrorMineSystem {
 
     public static boolean isFalseDescentDoorBlock(BlockPos pos) {
         return pos.equals(FALSE_DESCENT_DOOR_POS) || pos.equals(FALSE_DESCENT_DOOR_POS.above());
+    }
+
+    private static boolean isAtWitnessGate(BlockPos pos) {
+        return Math.abs(pos.getX() - WITNESS_GATE_POS.getX()) <= 2
+            && pos.getY() >= WITNESS_GATE_POS.getY()
+            && pos.getY() <= WITNESS_GATE_POS.getY() + 3
+            && Math.abs(pos.getZ() - WITNESS_GATE_POS.getZ()) <= 2;
     }
 
     public static boolean triggerDescentChoice(ServerPlayer player, PlayerFearState state) {
@@ -267,13 +279,83 @@ public final class MirrorMineSystem {
         NoWayUpAdvancementSystem.awardEnding(player, NoWayUpAdvancementSystem.WITNESS);
         state.setMirrorEntered(false);
         ServerLevel level = player.serverLevel();
-        buildWitnessRoom(level);
-        player.teleportTo(level, WITNESS_EXIT_POS.getX() + 0.5, WITNESS_EXIT_POS.getY(), WITNESS_EXIT_POS.getZ() + 0.5, 180.0F, 0.0F);
+        state.setWitnessEndingStartTick(level.getGameTime());
+        state.setWitnessEndingStage(0);
+        sendToWitnessVoid(player, state);
         player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 180, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 180, 3, false, false));
         player.displayClientMessage(Component.literal("You are early this time."), false);
         player.displayClientMessage(Component.literal("Do not warn them. They warned you too."), true);
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.AMBIENT, 0.9F, 0.55F);
+    }
+
+    public static void sendToWitnessVoid(ServerPlayer player, PlayerFearState state) {
+        ServerLevel level = mirrorLevelOrFallback(player);
+        buildWitnessVoid(level);
+        state.setWitnessEndingComplete();
+        state.setMirrorEntered(false);
+        player.setGameMode(GameType.SPECTATOR);
+        player.teleportTo(level, WITNESS_VOID_POS.getX() + 0.5, WITNESS_VOID_POS.getY() + 1.2, WITNESS_VOID_POS.getZ() + 0.5, 180.0F, 35.0F);
+        if (state.witnessEndingStage() < 4 && level.getEntitiesOfClass(ArmorStand.class, new net.minecraft.world.phys.AABB(WITNESS_VOID_POS.offset(0, 0, -4)).inflate(4.0), armorStand -> armorStand.getTags().contains(WITNESS_ENDING_TAG)).isEmpty()) {
+            spawnWitnessEndingFigure(level, WITNESS_VOID_POS.offset(0, 0, -4), player.getGameProfile().getName());
+        }
+    }
+
+    public static void tickWitnessEnding(ServerPlayer player, PlayerFearState state, long gameTime) {
+        if (!state.witnessEndingComplete() || !player.serverLevel().dimension().equals(MIRROR_LEVEL)) {
+            return;
+        }
+
+        ServerLevel level = player.serverLevel();
+        if (state.witnessEndingStartTick() <= 0L || state.witnessEndingStartTick() > gameTime) {
+            state.setWitnessEndingStartTick(gameTime);
+            state.setWitnessEndingStage(0);
+        }
+
+        player.setGameMode(GameType.SPECTATOR);
+        player.teleportTo(level, WITNESS_VOID_POS.getX() + 0.5, WITNESS_VOID_POS.getY() + 1.2, WITNESS_VOID_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
+
+        BlockPos figurePos = WITNESS_VOID_POS.offset(0, 0, -4);
+        if (state.witnessEndingStage() < 4 && gameTime % 100L == 0L && level.getEntitiesOfClass(ArmorStand.class, new net.minecraft.world.phys.AABB(figurePos).inflate(4.0), armorStand -> armorStand.getTags().contains(WITNESS_ENDING_TAG)).isEmpty()) {
+            spawnWitnessEndingFigure(level, figurePos, player.getGameProfile().getName());
+        }
+
+        long elapsed = gameTime - state.witnessEndingStartTick();
+        if (state.witnessEndingStage() < 1 && elapsed >= 60L) {
+            state.setWitnessEndingStage(1);
+            player.displayClientMessage(Component.literal("You are not late."), false);
+            level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.AMBIENT, 0.8F, 0.55F);
+        }
+        if (state.witnessEndingStage() < 2 && elapsed >= 160L) {
+            state.setWitnessEndingStage(2);
+            player.displayClientMessage(Component.literal("Do not warn them."), false);
+            level.playSound(null, WITNESS_VOID_POS, SoundEvents.GLASS_PLACE, SoundSource.BLOCKS, 0.9F, 0.45F);
+        }
+        if (state.witnessEndingStage() < 3 && elapsed >= 280L) {
+            state.setWitnessEndingStage(3);
+            player.displayClientMessage(Component.literal("They warned you too."), false);
+            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 160, 4, false, false));
+        }
+
+        if (state.witnessEndingStage() < 4 && elapsed >= 420L) {
+            state.setWitnessEndingStage(4);
+            player.displayClientMessage(Component.literal("Now watch."), false);
+            player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 260, 0, false, false));
+            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 260, 7, false, false));
+            level.playSound(null, player.blockPosition(), SoundEvents.SCULK_SHRIEKER_SHRIEK, SoundSource.HOSTILE, 0.8F, 0.35F);
+            for (ArmorStand witness : level.getEntitiesOfClass(ArmorStand.class, new net.minecraft.world.phys.AABB(figurePos).inflate(8.0), armorStand -> armorStand.getTags().contains(WITNESS_ENDING_TAG))) {
+                level.sendParticles(ParticleTypes.ASH, witness.getX(), witness.getY() + 1.0, witness.getZ(), 80, 0.45, 0.9, 0.45, 0.02);
+                witness.discard();
+            }
+        }
+
+        if (state.witnessEndingStage() < 4 && gameTime % 40L == 0L) {
+            level.sendParticles(ParticleTypes.ASH, figurePos.getX() + 0.5, figurePos.getY() + 1.0, figurePos.getZ() + 0.5, 25, 0.4, 0.8, 0.4, 0.01);
+        }
+        if (gameTime % 120L == 0L) {
+            player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 90, 0, false, false));
+            level.playSound(null, WITNESS_VOID_POS, SoundEvents.DEEPSLATE_STEP, SoundSource.AMBIENT, 0.7F, 0.5F);
+        }
     }
 
     public static void triggerSealEnding(ServerPlayer player, PlayerFearState state) {
@@ -511,7 +593,7 @@ public final class MirrorMineSystem {
     }
 
     private static void buildWitnessRoute(ServerLevel level) {
-        for (int z = 6; z <= 24; z++) {
+        for (int z = 6; z <= 12; z++) {
             BlockPos center = MIRROR_POS.offset(0, 0, z);
             for (int x = -2; x <= 2; x++) {
                 for (int y = -1; y <= 3; y++) {
@@ -525,8 +607,21 @@ public final class MirrorMineSystem {
             }
         }
 
-        buildWitnessRoom(level);
+        for (int x = -2; x <= 2; x++) {
+            for (int y = 0; y <= 3; y++) {
+                level.setBlock(WITNESS_GATE_POS.offset(x, y, 1), Blocks.TINTED_GLASS.defaultBlockState(), 3);
+            }
+        }
+        for (int z = 14; z <= 30; z++) {
+            BlockPos center = MIRROR_POS.offset(0, 0, z);
+            for (int x = -5; x <= 5; x++) {
+                for (int y = -1; y <= 5; y++) {
+                    level.setBlock(center.offset(x, y, 0), Blocks.POLISHED_DEEPSLATE.defaultBlockState(), 3);
+                }
+            }
+        }
         SignTextSystem.placeStandingSign(level, MIRROR_POS.offset(0, 0, 8), 8, "Follow", "your steps", "backward.", "");
+        SignTextSystem.placeStandingSign(level, WITNESS_GATE_POS.offset(0, 0, -1), 8, "You are", "early this", "time.", "");
     }
 
     private static void buildWitnessRoom(ServerLevel level) {
@@ -546,11 +641,33 @@ public final class MirrorMineSystem {
             }
         }
         SignTextSystem.placeStandingSign(level, center.offset(0, 0, 3), 8, "You are", "early this", "time.", "");
-        spawnWitnessFigure(level, center.offset(0, 0, -6));
     }
 
-    private static void spawnWitnessFigure(ServerLevel level, BlockPos pos) {
-        for (ArmorStand old : level.getEntitiesOfClass(ArmorStand.class, new net.minecraft.world.phys.AABB(pos).inflate(16.0), armorStand -> armorStand.getTags().contains(WITNESS_TAG))) {
+    private static void buildWitnessVoid(ServerLevel level) {
+        BlockPos center = WITNESS_VOID_POS;
+        for (int x = -5; x <= 5; x++) {
+            for (int y = -2; y <= 5; y++) {
+                for (int z = -7; z <= 5; z++) {
+                    BlockPos pos = center.offset(x, y, z);
+                    boolean shell = Math.abs(x) == 5 || y == -2 || y == 5 || z == -7 || z == 5;
+                    level.setBlock(pos, shell ? Blocks.BLACK_CONCRETE.defaultBlockState() : Blocks.AIR.defaultBlockState(), 3);
+                }
+            }
+        }
+
+        for (int x = -3; x <= 3; x++) {
+            for (int z = -2; z <= 2; z++) {
+                level.setBlock(center.offset(x, -1, z), Blocks.TINTED_GLASS.defaultBlockState(), 3);
+            }
+        }
+        level.setBlock(center.offset(0, 0, 4), Blocks.TINTED_GLASS.defaultBlockState(), 3);
+        level.setBlock(center.offset(0, 1, 4), Blocks.TINTED_GLASS.defaultBlockState(), 3);
+        level.setBlock(center.offset(0, 2, 4), Blocks.TINTED_GLASS.defaultBlockState(), 3);
+        SignTextSystem.placeStandingSign(level, center.offset(0, 0, 3), 0, "Now", "watch.", "", "");
+    }
+
+    private static void spawnWitnessEndingFigure(ServerLevel level, BlockPos pos, String playerName) {
+        for (ArmorStand old : level.getEntitiesOfClass(ArmorStand.class, new net.minecraft.world.phys.AABB(pos).inflate(32.0), armorStand -> armorStand.getTags().contains(WITNESS_ENDING_TAG))) {
             old.discard();
         }
         ArmorStand figure = new ArmorStand(EntityType.ARMOR_STAND, level);
@@ -559,14 +676,24 @@ public final class MirrorMineSystem {
         figure.setInvulnerable(true);
         figure.setSilent(true);
         figure.addTag(WITNESS_TAG);
-        figure.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.PLAYER_HEAD));
+        figure.addTag(WITNESS_ENDING_TAG);
+        figure.setItemSlot(EquipmentSlot.HEAD, playerHead(playerName));
         figure.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.LEATHER_CHESTPLATE));
+        figure.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Items.LEATHER_LEGGINGS));
+        figure.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.LEATHER_BOOTS));
         level.addFreshEntity(figure);
+    }
+
+    private static ItemStack playerHead(String playerName) {
+        ItemStack head = new ItemStack(Items.PLAYER_HEAD);
+        CompoundTag tag = head.getOrCreateTag();
+        tag.putString("SkullOwner", playerName);
+        return head;
     }
 
     public static void cleanupWitnessFigures(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
-        for (ArmorStand witness : level.getEntitiesOfClass(ArmorStand.class, player.getBoundingBox().inflate(96.0), armorStand -> armorStand.getTags().contains(WITNESS_TAG))) {
+        for (ArmorStand witness : level.getEntitiesOfClass(ArmorStand.class, player.getBoundingBox().inflate(96.0), armorStand -> armorStand.getTags().contains(WITNESS_TAG) && !armorStand.getTags().contains(WITNESS_ENDING_TAG))) {
             Vec3 toWitness = witness.position().add(0.0, 1.0, 0.0).subtract(player.getEyePosition());
             double distance = toWitness.length();
             boolean lookingToward = distance < 64.0D && player.getLookAngle().normalize().dot(toWitness.normalize()) > 0.72D;
