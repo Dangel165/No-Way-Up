@@ -8,12 +8,14 @@ import com.nowayup.system.ForcedCrashSystem;
 import com.nowayup.system.LoreBookSystem;
 import com.nowayup.system.MirrorMineSystem;
 import com.nowayup.system.MineshaftPrisonSystem;
+import com.nowayup.system.NoWayUpAdvancementSystem;
 import com.nowayup.system.WatcherIllusionSystem;
 import com.nowayup.network.FearHudPacket;
 import com.nowayup.network.NoWayUpNetwork;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -208,7 +210,25 @@ public class NoWayUpEvents {
                             data.setDirty();
                             context.getSource().sendSuccess(() -> Component.literal("Happy Ending triggered."), false);
                             return 1;
-                        })))
+                        }))
+                    .then(Commands.literal("reset")
+                        .then(Commands.argument("target", EntityArgument.player())
+                            .executes(context -> {
+                                ServerPlayer target = EntityArgument.getPlayer(context, "target");
+                                ServerLevel level = dataLevel(target);
+                                FearProgressSavedData data = FearProgressSavedData.get(level);
+                                PlayerFearState state = data.stateFor(target.getUUID());
+                                state.resetAllEndings();
+                                state.resetEventTimers(level.getGameTime());
+                                NoWayUpAdvancementSystem.revokeEndings(target);
+                                ensureMineReady(level, data);
+                                target.setGameMode(GameType.SURVIVAL);
+                                MineshaftPrisonSystem.sendToStart(target);
+                                target.displayClientMessage(Component.literal("No Way Up endings reset."), true);
+                                data.setDirty();
+                                context.getSource().sendSuccess(() -> Component.literal("Reset No Way Up endings for " + target.getGameProfile().getName() + "."), true);
+                                return 1;
+                            }))))
                 .then(Commands.literal("start")
                     .executes(context -> {
                         ServerPlayer player = context.getSource().getPlayerOrException();

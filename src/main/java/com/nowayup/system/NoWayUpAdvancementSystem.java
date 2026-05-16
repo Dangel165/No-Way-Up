@@ -16,6 +16,15 @@ public final class NoWayUpAdvancementSystem {
 
     private static final String ROOT = "root";
     private static final String CRITERION = "ending";
+    private static final String[] ALL_ENDINGS = {
+        LOOP,
+        DESCENT,
+        REPLACEMENT,
+        WITNESS,
+        SEAL,
+        ELIAS,
+        DAWN
+    };
 
     private NoWayUpAdvancementSystem() {
     }
@@ -25,10 +34,24 @@ public final class NoWayUpAdvancementSystem {
         award(player, path);
     }
 
+    public static void revokeEndings(ServerPlayer player) {
+        for (String path : ALL_ENDINGS) {
+            revoke(player, path);
+        }
+        revoke(player, ROOT);
+    }
+
     private static void award(ServerPlayer player, String path) {
         Advancement advancement = player.server.getAdvancements().getAdvancement(new ResourceLocation(NoWayUpMod.MOD_ID, path));
         if (advancement != null) {
             player.getAdvancements().award(advancement, CRITERION);
+        }
+    }
+
+    private static void revoke(ServerPlayer player, String path) {
+        Advancement advancement = player.server.getAdvancements().getAdvancement(new ResourceLocation(NoWayUpMod.MOD_ID, path));
+        if (advancement != null) {
+            player.getAdvancements().revoke(advancement, CRITERION);
         }
     }
 }

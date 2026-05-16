@@ -288,6 +288,23 @@ public class PlayerFearState {
         happyEndingComplete = true;
     }
 
+    public void resetHappyEndingComplete() {
+        happyEndingComplete = false;
+    }
+
+    public void resetAllEndings() {
+        setMirrorEntered(false);
+        setCollapseStage(0);
+        setMirrorEventStage(0);
+        resetLoopEndingComplete();
+        resetDescentEndingComplete();
+        resetReplacementEndingComplete();
+        resetWitnessEndingComplete();
+        resetSealEndingComplete();
+        resetEliasEndingComplete();
+        resetHappyEndingComplete();
+    }
+
     public void resetRunAfterDeath(long gameTime) {
         resetFakeExitCount();
         resetWatcherSightings();
