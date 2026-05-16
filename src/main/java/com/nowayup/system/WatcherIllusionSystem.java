@@ -57,7 +57,7 @@ public final class WatcherIllusionSystem {
         boolean added = level.addFreshEntity(watcher);
         if (added) {
             level.playSound(null, watcher.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.AMBIENT, 1.0F, 0.45F);
-            player.displayClientMessage(net.minecraft.network.chat.Component.literal("It is still there."), true);
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("nowayup.message.it_is_still_there"), true);
         }
         return added;
     }

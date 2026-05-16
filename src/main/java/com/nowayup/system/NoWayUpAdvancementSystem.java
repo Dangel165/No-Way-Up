@@ -51,7 +51,9 @@ public final class NoWayUpAdvancementSystem {
     private static void revoke(ServerPlayer player, String path) {
         Advancement advancement = player.server.getAdvancements().getAdvancement(new ResourceLocation(NoWayUpMod.MOD_ID, path));
         if (advancement != null) {
-            player.getAdvancements().revoke(advancement, CRITERION);
+            for (String criterion : player.getAdvancements().getOrStartProgress(advancement).getCompletedCriteria()) {
+                player.getAdvancements().revoke(advancement, criterion);
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ import com.nowayup.system.LoreBookSystem;
 import com.nowayup.system.MirrorMineSystem;
 import com.nowayup.system.MineshaftPrisonSystem;
 import com.nowayup.system.NoWayUpAdvancementSystem;
+import com.nowayup.system.NoWayUpText;
 import com.nowayup.system.WatcherIllusionSystem;
 import com.nowayup.network.FearHudPacket;
 import com.nowayup.network.NoWayUpNetwork;
@@ -51,7 +52,7 @@ public class NoWayUpEvents {
                         .executes(context -> {
                             ServerPlayer player = context.getSource().getPlayerOrException();
                             PlayerFearState state = FearProgressSavedData.get(dataLevel(player)).stateFor(player.getUUID());
-                            context.getSource().sendSuccess(() -> Component.literal("No Way Up fear: " + state.fearProgress()), false);
+                            context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.fear", state.fearProgress()), false);
                             return state.fearProgress();
                         }))
                     .then(Commands.literal("add")
@@ -63,7 +64,7 @@ public class NoWayUpEvents {
                                 state.addFear(IntegerArgumentType.getInteger(context, "amount"));
                                 applyDebugFearEffects(player, state);
                                 data.setDirty();
-                                context.getSource().sendSuccess(() -> Component.literal("No Way Up fear: " + state.fearProgress()), false);
+                                context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.fear", state.fearProgress()), false);
                                 return state.fearProgress();
                             })))
                     .then(Commands.literal("set")
@@ -75,20 +76,20 @@ public class NoWayUpEvents {
                                 state.setFearProgress(IntegerArgumentType.getInteger(context, "amount"));
                                 applyDebugFearEffects(player, state);
                                 data.setDirty();
-                                context.getSource().sendSuccess(() -> Component.literal("No Way Up fear: " + state.fearProgress()), false);
+                                context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.fear", state.fearProgress()), false);
                                 return state.fearProgress();
                             }))))
                 .then(Commands.literal("desktop")
                     .executes(context -> {
                         ServerPlayer player = context.getSource().getPlayerOrException();
                         NoWayUpNetwork.sendDesktopScare(player);
-                        context.getSource().sendSuccess(() -> Component.literal("Desktop message sent to client."), false);
+                        context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.desktop"), false);
                         return 1;
                     }))
                 .then(Commands.literal("crash")
                     .executes(context -> {
                         int kicked = ForcedCrashSystem.disconnectEveryone(context.getSource().getServer());
-                        context.getSource().sendSuccess(() -> Component.literal("No Way Up crash packet sent to " + kicked + " player(s)."), true);
+                        context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.crash", kicked), true);
                         return kicked;
                     }))
                 .then(Commands.literal("watcher")
@@ -103,14 +104,14 @@ public class NoWayUpEvents {
                             FearMessageSystem.watcherSeen(player);
                             data.setDirty();
                         }
-                        context.getSource().sendSuccess(() -> Component.literal(spawned ? "Watcher spawned." : "Watcher failed."), false);
+                        context.getSource().sendSuccess(() -> NoWayUpText.tr(spawned ? "nowayup.command.watcher_spawned" : "nowayup.command.watcher_failed"), false);
                         return spawned ? 1 : 0;
                     }))
                 .then(Commands.literal("lore")
                     .executes(context -> {
                         ServerPlayer player = context.getSource().getPlayerOrException();
                         LoreBookSystem.giveLoreBooks(player);
-                        context.getSource().sendSuccess(() -> Component.literal("Lore books added."), false);
+                        context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.lore"), false);
                         return 1;
                     }))
                 .then(Commands.literal("mutate")
@@ -121,7 +122,7 @@ public class NoWayUpEvents {
                         state.incrementReconnectCount();
                         EnvironmentMutationSystem.mutateOnReconnect(player.serverLevel(), state);
                         data.setDirty();
-                        context.getSource().sendSuccess(() -> Component.literal("Environment mutated."), false);
+                        context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.mutate"), false);
                         return 1;
                     }))
                 .then(Commands.literal("mirror")
@@ -131,7 +132,7 @@ public class NoWayUpEvents {
                         PlayerFearState state = data.stateFor(player.getUUID());
                         MirrorMineSystem.enterMirror(player, state);
                         data.setDirty();
-                        context.getSource().sendSuccess(() -> Component.literal("Entered the mirror mine."), false);
+                        context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.mirror"), false);
                         return 1;
                     }))
                 .then(Commands.literal("collapse")
@@ -139,7 +140,7 @@ public class NoWayUpEvents {
                         .executes(context -> {
                             ServerPlayer player = context.getSource().getPlayerOrException();
                             PlayerFearState state = FearProgressSavedData.get(dataLevel(player)).stateFor(player.getUUID());
-                            context.getSource().sendSuccess(() -> Component.literal("Mirror collapse stage: " + state.collapseStage()), false);
+                            context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.collapse_get", state.collapseStage()), false);
                             return state.collapseStage();
                         }))
                     .then(Commands.literal("set")
@@ -151,7 +152,7 @@ public class NoWayUpEvents {
                                 int stage = IntegerArgumentType.getInteger(context, "stage");
                                 MirrorMineSystem.forceCollapseStage(player, state, stage);
                                 data.setDirty();
-                                context.getSource().sendSuccess(() -> Component.literal("Mirror collapse stage set to " + stage + "."), false);
+                                context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.collapse_set", stage), false);
                                 return stage;
                             }))))
                 .then(Commands.literal("ending")
@@ -162,7 +163,7 @@ public class NoWayUpEvents {
                             PlayerFearState state = data.stateFor(player.getUUID());
                             MirrorMineSystem.triggerLoopEnding(player, state);
                             data.setDirty();
-                            context.getSource().sendSuccess(() -> Component.literal("Loop Ending triggered."), false);
+                            context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.ending_loop"), false);
                             return 1;
                         }))
                     .then(Commands.literal("witness")
@@ -175,7 +176,7 @@ public class NoWayUpEvents {
                             }
                             MirrorMineSystem.triggerWitnessEnding(player, state);
                             data.setDirty();
-                            context.getSource().sendSuccess(() -> Component.literal("Witness Ending triggered."), false);
+                            context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.ending_witness"), false);
                             return 1;
                         }))
                     .then(Commands.literal("seal")
@@ -188,7 +189,7 @@ public class NoWayUpEvents {
                             }
                             MirrorMineSystem.triggerSealEnding(player, state);
                             data.setDirty();
-                            context.getSource().sendSuccess(() -> Component.literal("Seal Ending triggered."), false);
+                            context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.ending_seal"), false);
                             return 1;
                         }))
                     .then(Commands.literal("elias")
@@ -198,7 +199,7 @@ public class NoWayUpEvents {
                             PlayerFearState state = data.stateFor(player.getUUID());
                             MirrorMineSystem.triggerEliasEnding(player, state);
                             data.setDirty();
-                            context.getSource().sendSuccess(() -> Component.literal("Elias Ending triggered."), false);
+                            context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.ending_elias"), false);
                             return 1;
                         }))
                     .then(Commands.literal("happy")
@@ -208,9 +209,32 @@ public class NoWayUpEvents {
                             PlayerFearState state = data.stateFor(player.getUUID());
                             MirrorMineSystem.triggerHappyEnding(player, state);
                             data.setDirty();
-                            context.getSource().sendSuccess(() -> Component.literal("Happy Ending triggered."), false);
+                            context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.ending_happy"), false);
                             return 1;
                         }))
+                    .then(Commands.literal("return")
+                        .then(Commands.literal("now")
+                            .executes(context -> {
+                                ServerPlayer player = context.getSource().getPlayerOrException();
+                                FearProgressSavedData data = FearProgressSavedData.get(dataLevel(player));
+                                PlayerFearState state = data.stateFor(player.getUUID());
+                                MirrorMineSystem.returnToMineAfterEnding(player, state);
+                                data.setDirty();
+                                context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.ending_return_now"), false);
+                                return 1;
+                            }))
+                        .then(Commands.literal("ticks")
+                            .then(Commands.argument("ticks", IntegerArgumentType.integer(1))
+                                .executes(context -> {
+                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                    FearProgressSavedData data = FearProgressSavedData.get(dataLevel(player));
+                                    PlayerFearState state = data.stateFor(player.getUUID());
+                                    int ticks = IntegerArgumentType.getInteger(context, "ticks");
+                                    MirrorMineSystem.scheduleEndingReturnToMine(state, dataLevel(player).getGameTime(), ticks);
+                                    data.setDirty();
+                                    context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.ending_return_ticks", ticks), false);
+                                    return ticks;
+                                }))))
                     .then(Commands.literal("reset")
                         .then(Commands.argument("target", EntityArgument.player())
                             .executes(context -> {
@@ -219,22 +243,47 @@ public class NoWayUpEvents {
                                 FearProgressSavedData data = FearProgressSavedData.get(level);
                                 PlayerFearState state = data.stateFor(target.getUUID());
                                 state.resetAllEndings();
-                                state.resetEventTimers(level.getGameTime());
+                                state.resetProgressForNewLoop(level.getGameTime());
                                 NoWayUpAdvancementSystem.revokeEndings(target);
                                 ensureMineReady(level, data);
-                                target.setGameMode(GameType.SURVIVAL);
-                                MineshaftPrisonSystem.sendToStart(target);
-                                target.displayClientMessage(Component.literal("No Way Up endings reset."), true);
+                                MineshaftPrisonSystem.buildNoSurfaceColumn(level);
+                                MineshaftPrisonSystem.refreshMirrorGate(level, 0);
+                                sendToOverworldStart(target, level);
+                                target.displayClientMessage(NoWayUpText.tr("nowayup.command.reset_target"), true);
                                 data.setDirty();
-                                context.getSource().sendSuccess(() -> Component.literal("Reset No Way Up endings for " + target.getGameProfile().getName() + "."), true);
+                                context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.reset_source", target.getGameProfile().getName()), true);
                                 return 1;
+                            }))))
+                .then(Commands.literal("return")
+                    .then(Commands.literal("now")
+                        .executes(context -> {
+                            ServerPlayer player = context.getSource().getPlayerOrException();
+                            FearProgressSavedData data = FearProgressSavedData.get(dataLevel(player));
+                            PlayerFearState state = data.stateFor(player.getUUID());
+                            MirrorMineSystem.returnToMineAfterEnding(player, state);
+                            data.setDirty();
+                            context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.ending_return_now"), false);
+                            return 1;
+                        }))
+                    .then(Commands.literal("ticks")
+                        .then(Commands.argument("ticks", IntegerArgumentType.integer(1))
+                            .executes(context -> {
+                                ServerPlayer player = context.getSource().getPlayerOrException();
+                                FearProgressSavedData data = FearProgressSavedData.get(dataLevel(player));
+                                PlayerFearState state = data.stateFor(player.getUUID());
+                                int ticks = IntegerArgumentType.getInteger(context, "ticks");
+                                MirrorMineSystem.scheduleEndingReturnToMine(state, dataLevel(player).getGameTime(), ticks);
+                                data.setDirty();
+                                context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.ending_return_ticks", ticks), false);
+                                return ticks;
                             }))))
                 .then(Commands.literal("start")
                     .executes(context -> {
                         ServerPlayer player = context.getSource().getPlayerOrException();
-                        MineshaftPrisonSystem.buildStartingChamber(player.serverLevel());
-                        MineshaftPrisonSystem.sendToStart(player);
-                        context.getSource().sendSuccess(() -> Component.literal("Sent to the mine."), false);
+                        ServerLevel level = dataLevel(player);
+                        MineshaftPrisonSystem.buildStartingChamber(level);
+                        sendToOverworldStart(player, level);
+                        context.getSource().sendSuccess(() -> NoWayUpText.tr("nowayup.command.start"), false);
                         return 1;
                     }))
         );
@@ -246,6 +295,11 @@ public class NoWayUpEvents {
             return;
         }
         BlockPos pos = event.getPos();
+        if (player.serverLevel().dimension().equals(Level.OVERWORLD) && MineshaftPrisonSystem.isProtectedStartAltar(pos)) {
+            event.setCanceled(true);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.altar_protected"), true);
+            return;
+        }
         boolean noWayUpRegion = player.serverLevel().dimension().equals(MirrorMineSystem.MIRROR_LEVEL)
             || player.serverLevel().dimension().equals(MirrorMineSystem.DESCENT_VOID_LEVEL)
             || player.serverLevel().dimension().equals(MirrorMineSystem.DAWN_LEVEL)
@@ -298,7 +352,7 @@ public class NoWayUpEvents {
     @SubscribeEvent
     public void onPlayerDeath(LivingDeathEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            player.displayClientMessage(Component.literal("You will never get out."), false);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.never_get_out"), false);
         }
     }
 
@@ -311,26 +365,10 @@ public class NoWayUpEvents {
         ServerLevel level = dataLevel(player);
         FearProgressSavedData data = FearProgressSavedData.get(level);
         PlayerFearState state = data.stateFor(player.getUUID());
-        if (state.witnessEndingComplete()) {
+        if (state.endingReturnPending() || MirrorMineSystem.isEliasEndingActive(state)) {
             player.server.execute(() -> {
-                MirrorMineSystem.sendToWitnessVoid(player, state);
-                player.displayClientMessage(Component.literal("Now watch."), true);
-            });
-            return;
-        }
-        if (state.descentEndingComplete()) {
-            player.setGameMode(GameType.SURVIVAL);
-            player.server.execute(() -> {
-                MirrorMineSystem.sendToDescentVoid(player, state);
-                player.displayClientMessage(Component.literal("That was never allowed."), true);
-            });
-            return;
-        }
-        if (state.happyEndingComplete()) {
-            player.setGameMode(GameType.SURVIVAL);
-            player.server.execute(() -> {
-                MirrorMineSystem.sendToDawn(player);
-                player.displayClientMessage(Component.literal("The way out stayed open."), true);
+                MirrorMineSystem.returnToMineAfterEnding(player, state);
+                data.setDirty();
             });
             return;
         }
@@ -341,8 +379,8 @@ public class NoWayUpEvents {
         state.resetRunAfterDeath(level.getGameTime());
         player.server.execute(() -> {
             player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
-            player.displayClientMessage(Component.literal("You will never get out."), false);
-            player.displayClientMessage(Component.literal("Death was not a way out."), true);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.never_get_out"), false);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.death_not_way_out"), true);
             level.playSound(null, MineshaftPrisonSystem.START_POS, SoundEvents.AMBIENT_CAVE.value(), SoundSource.AMBIENT, 1.0F, 0.45F);
             level.playSound(null, MineshaftPrisonSystem.START_POS.offset(0, 0, -4), SoundEvents.WOODEN_DOOR_CLOSE, SoundSource.AMBIENT, 0.9F, 0.5F);
         });
@@ -366,23 +404,10 @@ public class NoWayUpEvents {
         FearProgressSavedData data = FearProgressSavedData.get(level);
         PlayerFearState state = data.stateFor(player.getUUID());
 
-        if (state.witnessEndingComplete()) {
-            MirrorMineSystem.sendToWitnessVoid(player, state);
-            player.displayClientMessage(Component.literal("Now watch."), true);
-            return;
-        }
-
-        if (state.descentEndingComplete()) {
-            player.setGameMode(GameType.SURVIVAL);
-            MirrorMineSystem.sendToDescentVoid(player, state);
-            player.displayClientMessage(Component.literal("That was never allowed."), true);
-            return;
-        }
-
-        if (state.happyEndingComplete()) {
-            player.setGameMode(GameType.SURVIVAL);
-            MirrorMineSystem.sendToDawn(player);
-            player.displayClientMessage(Component.literal("The way out stayed open."), true);
+        if (state.endingReturnPending()) {
+            if (MirrorMineSystem.tickEndingReturn(player, state, level.getGameTime())) {
+                data.setDirty();
+            }
             return;
         }
 
@@ -401,7 +426,7 @@ public class NoWayUpEvents {
             if (state.fearProgress() >= 100 || state.reconnectCount() >= 1) {
                 EnvironmentMutationSystem.mutateOnReconnect(level, state);
             }
-            player.displayClientMessage(net.minecraft.network.chat.Component.literal("Why did you come back?"), true);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.why_returned"), true);
         }
 
         data.setDirty();
@@ -420,6 +445,12 @@ public class NoWayUpEvents {
 
         boolean inMirrorLevel = player.serverLevel().dimension().equals(MirrorMineSystem.MIRROR_LEVEL);
 
+        if (MirrorMineSystem.tickEndingReturn(player, state, gameTime)) {
+            sendFearHud(player, state);
+            data.setDirty();
+            return;
+        }
+
         if (player.serverLevel().dimension().equals(MirrorMineSystem.DAWN_LEVEL)) {
             MirrorMineSystem.tickDawn(player, state, gameTime);
             sendFearHud(player, state);
@@ -434,13 +465,6 @@ public class NoWayUpEvents {
             return;
         }
 
-        if (state.witnessEndingComplete() && !inMirrorLevel) {
-            MirrorMineSystem.sendToWitnessVoid(player, state);
-            sendFearHud(player, state);
-            data.setDirty();
-            return;
-        }
-
         if (state.mirrorEntered() && !inMirrorLevel) {
             state.setMirrorEntered(false);
             state.setCollapseStage(0);
@@ -448,14 +472,14 @@ public class NoWayUpEvents {
             data.setDirty();
         }
 
-        if (inMirrorLevel && state.eliasEndingComplete()) {
+        if (inMirrorLevel && MirrorMineSystem.isEliasEndingActive(state)) {
             MirrorMineSystem.tickEliasChamber(player, state);
             sendFearHud(player, state);
             data.setDirty();
             return;
         }
 
-        if (inMirrorLevel && state.witnessEndingComplete()) {
+        if (inMirrorLevel && MirrorMineSystem.isWitnessEndingActive(state)) {
             MirrorMineSystem.tickWitnessEnding(player, state, gameTime);
             sendFearHud(player, state);
             data.setDirty();
@@ -493,8 +517,6 @@ public class NoWayUpEvents {
         tickMirrorGate(player, state, gameTime);
         tickAudio(player, state, gameTime);
         tickWhispers(player, state, gameTime);
-        tickDesktopMessage(player, state);
-        tickForcedCrash(player, state);
         tickWatcher(player, state, gameTime);
         if (inMirrorLevel) {
             MirrorMineSystem.tickMirror(player, state);
@@ -528,6 +550,9 @@ public class NoWayUpEvents {
     }
 
     private static String hudPhase(PlayerFearState state) {
+        if (MirrorMineSystem.allEndingsComplete(state)) {
+            return "Early";
+        }
         if (state.happyEndingComplete()) {
             return "Dawn";
         }
@@ -544,6 +569,9 @@ public class NoWayUpEvents {
     }
 
     private static String hudEnding(PlayerFearState state) {
+        if (MirrorMineSystem.allEndingsComplete(state)) {
+            return "";
+        }
         if (state.happyEndingComplete()) {
             return "Ending: Dawn";
         }
@@ -575,7 +603,7 @@ public class NoWayUpEvents {
 
         long elapsed = gameTime - state.wakeSequenceStartTick();
         if (state.wakeSequenceStage() < 1 && elapsed >= 20L) {
-            player.displayClientMessage(Component.literal("You will never get out."), false);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.never_get_out"), false);
             player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.AMBIENT_CAVE.value(), SoundSource.AMBIENT, 1.0F, 0.45F);
             state.addFear(10);
             state.setWakeSequenceStage(1);
@@ -587,12 +615,12 @@ public class NoWayUpEvents {
         }
         if (state.wakeSequenceStage() < 3 && elapsed >= 120L) {
             WatcherIllusionSystem.spawnWatcher(player);
-            player.displayClientMessage(Component.literal("It found the new start."), true);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.found_new_start"), true);
             state.setWakeSequenceStage(3);
         }
         if (state.wakeSequenceStage() < 4 && elapsed >= 200L) {
             EnvironmentMutationSystem.applyLateMutation(player.serverLevel(), state);
-            player.displayClientMessage(Component.literal("The mine starts again."), true);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.mine_starts_again"), true);
             state.setWakeSequenceStage(4);
         }
         if (elapsed >= 300L) {
@@ -655,14 +683,14 @@ public class NoWayUpEvents {
                 return;
             }
             if (MirrorMineSystem.shouldEnterMirrorGate(state)) {
-                player.displayClientMessage(Component.literal("The wall opens the wrong way."), false);
+                player.displayClientMessage(NoWayUpText.tr("nowayup.message.wall_opens_wrong"), false);
                 MirrorMineSystem.enterMirror(player, state);
             } else {
-                player.displayClientMessage(Component.literal("The mirror is still asleep."), true);
+                player.displayClientMessage(NoWayUpText.tr("nowayup.message.mirror_asleep"), true);
                 state.addFear(1);
             }
         } else if (gameTime % 80L == 0L) {
-            player.displayClientMessage(Component.literal("The wall looks back."), true);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.wall_looks_back"), true);
         }
     }
 
@@ -711,14 +739,14 @@ public class NoWayUpEvents {
         state.addFear(5);
         state.resetEventTimers(level.getGameTime());
         player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
-        player.displayClientMessage(Component.literal("You will never get out."), true);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.never_get_out"), true);
         return true;
     }
 
     private static void applyDebugFearEffects(ServerPlayer player, PlayerFearState state) {
         if (state.fearProgress() >= 100) {
             EnvironmentMutationSystem.applyLateMutation(player.serverLevel(), state);
-            player.displayClientMessage(Component.literal("The mine noticed the change."), true);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.mine_noticed_change"), true);
         }
         if (state.fearProgress() >= 220) {
             if (WatcherIllusionSystem.spawnWatcher(player)) {
@@ -765,19 +793,6 @@ public class NoWayUpEvents {
         state.setNextWhisperTick(gameTime + 1200L + player.getRandom().nextInt(3600));
     }
 
-    private static void tickDesktopMessage(ServerPlayer player, PlayerFearState state) {
-        if (!state.desktopMessageCreated() && state.fearProgress() >= 160 && state.reconnectCount() >= 2) {
-            NoWayUpNetwork.sendDesktopScare(player);
-            state.setDesktopMessageCreated();
-        }
-    }
-
-    private static void tickForcedCrash(ServerPlayer player, PlayerFearState state) {
-        if (ForcedCrashSystem.shouldTrigger(state)) {
-            ForcedCrashSystem.crashOrDisconnect(player, state);
-        }
-    }
-
     private static void tickWatcher(ServerPlayer player, PlayerFearState state, long gameTime) {
         if (state.fearProgress() < 220 || gameTime < state.nextWatcherTick()) {
             return;
@@ -820,6 +835,12 @@ public class NoWayUpEvents {
     private static ServerLevel dataLevel(ServerPlayer player) {
         ServerLevel overworld = player.server.getLevel(Level.OVERWORLD);
         return overworld == null ? player.serverLevel() : overworld;
+    }
+
+    private static void sendToOverworldStart(ServerPlayer player, ServerLevel level) {
+        player.setGameMode(GameType.SURVIVAL);
+        player.removeAllEffects();
+        player.teleportTo(level, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), 0.0F);
     }
 
     private static void ensureMineReady(ServerLevel level, FearProgressSavedData data) {

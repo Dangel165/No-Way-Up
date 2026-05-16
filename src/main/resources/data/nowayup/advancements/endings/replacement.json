@@ -5,10 +5,10 @@
       "item": "minecraft:sculk_sensor"
     },
     "title": {
-      "text": "Replacement Ending"
+      "translate": "advancements.nowayup.endings.replacement.title"
     },
     "description": {
-      "text": "You waited long enough for it to learn you."
+      "translate": "advancements.nowayup.endings.replacement.description"
     },
     "frame": "challenge",
     "show_toast": true,

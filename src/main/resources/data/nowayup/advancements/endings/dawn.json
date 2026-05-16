@@ -5,10 +5,10 @@
       "item": "minecraft:oxeye_daisy"
     },
     "title": {
-      "text": "Dawn Ending"
+      "translate": "advancements.nowayup.endings.dawn.title"
     },
     "description": {
-      "text": "You carried every name back to the morning."
+      "translate": "advancements.nowayup.endings.dawn.description"
     },
     "frame": "challenge",
     "show_toast": true,

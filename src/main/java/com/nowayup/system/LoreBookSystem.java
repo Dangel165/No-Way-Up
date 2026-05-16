@@ -44,78 +44,38 @@ public final class LoreBookSystem {
         return List.of(
             book(
                 "Shaft 0 Survey",
+                "nowayup.book.shaft0.title",
                 "Elias Ward",
                 List.of(
-                    """
-                    Shaft 0 cannot be mapped.
-
-                    Routes alter after observation.
-
-                    Do not leave markers you are not willing to see again.
-                    """,
-                    """
-                    Every tunnel we marked as rising has led us lower.
-
-                    The foreman says the instruments are broken.
-
-                    All six of them?
-                    """
+                    "nowayup.book.shaft0.page1",
+                    "nowayup.book.shaft0.page2"
                 )
             ),
             book(
                 "The Upward Grave",
+                "nowayup.book.upward_grave.title",
                 "Unknown Worker",
                 List.of(
-                    """
-                    DO NOT CLIMB.
-
-                    THE MINE LEARNED THE SKY.
-                    """,
-                    """
-                    If the tunnel rises, turn around.
-
-                    If the door is open, do not close it.
-
-                    If you hear your name, do not answer.
-                    """
+                    "nowayup.book.upward_grave.page1",
+                    "nowayup.book.upward_grave.page2"
                 )
             ),
             book(
                 "Mirror Note",
+                "nowayup.book.mirror_note.title",
                 "Survey Team 3",
                 List.of(
-                    """
-                    There are no monsters here.
-
-                    That means it already ate them.
-                    """,
-                    """
-                    Do not climb this time.
-
-                    The exit hates the light.
-
-                    Your shadow left first.
-                    """
+                    "nowayup.book.mirror_note.page1",
+                    "nowayup.book.mirror_note.page2"
                 )
             ),
             book(
                 "Elias Ward's Journal",
+                "nowayup.book.elias_journal.title",
                 "Elias Ward",
                 List.of(
-                    """
-                    Day 14
-
-                    We climbed for three hours today.
-
-                    When we stopped, the depth gauge said we were lower than breakfast.
-                    """,
-                    """
-                    I saw myself at the end of the rail line.
-
-                    It did not move.
-
-                    It was waiting where I will be.
-                    """
+                    "nowayup.book.elias_journal.page1",
+                    "nowayup.book.elias_journal.page2"
                 )
             )
         );
@@ -125,49 +85,36 @@ public final class LoreBookSystem {
         return List.of(
             book(
                 "A Note With Your Name",
+                "nowayup.book.name_note.title",
                 "???",
                 List.of(
-                    """
-                    Why did you come back?
-
-                    You were closer when you stopped trying to leave.
-                    """,
-                    """
-                    The tunnel remembers your footsteps.
-
-                    It puts them ahead of you.
-                    """
+                    "nowayup.book.name_note.page1",
+                    "nowayup.book.name_note.page2"
                 )
             ),
             book(
                 "Do Not Open It",
+                "nowayup.book.do_not_open.title",
                 "???",
                 List.of(
-                    """
-                    Do not open the door.
-
-                    It is already open.
-                    """,
-                    """
-                    If you see yourself, do not answer.
-
-                    If you answer, it will know which voice to keep.
-                    """
+                    "nowayup.book.do_not_open.page1",
+                    "nowayup.book.do_not_open.page2"
                 )
             )
         );
     }
 
-    private static ItemStack book(String title, String author, List<String> pages) {
+    private static ItemStack book(String title, String titleKey, String author, List<String> pageKeys) {
         ItemStack stack = new ItemStack(Items.WRITTEN_BOOK);
+        stack.setHoverName(Component.translatable(titleKey));
         CompoundTag tag = stack.getOrCreateTag();
         tag.putString("title", title);
         tag.putString("author", author);
         tag.putBoolean("resolved", true);
 
         ListTag pageTags = new ListTag();
-        for (String page : pages) {
-            pageTags.add(StringTag.valueOf(Component.Serializer.toJson(Component.literal(page.strip()))));
+        for (String pageKey : pageKeys) {
+            pageTags.add(StringTag.valueOf(Component.Serializer.toJson(Component.translatable(pageKey))));
         }
         tag.put("pages", pageTags);
         return stack;

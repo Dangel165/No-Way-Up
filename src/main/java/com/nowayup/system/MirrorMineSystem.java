@@ -2,6 +2,7 @@ package com.nowayup.system;
 
 import com.nowayup.data.PlayerFearState;
 import com.nowayup.NoWayUpMod;
+import com.nowayup.network.NoWayUpNetwork;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -25,6 +26,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -46,12 +48,15 @@ public final class MirrorMineSystem {
     private static final BlockPos WITNESS_VOID_POS = MIRROR_POS.offset(0, 28, 0);
     private static final BlockPos SEAL_GATE_POS = MIRROR_POS.offset(0, 0, 5);
     private static final BlockPos SEAL_CHAMBER_POS = MIRROR_POS.offset(24, 0, 0);
-    private static final BlockPos ELIAS_CHAMBER_POS = MIRROR_POS.offset(48, -40, 0);
+    private static final BlockPos ELIAS_CHAMBER_POS = MIRROR_POS.offset(48, 24, 0);
+    private static final BlockPos ELIAS_SPAWN_POS = ELIAS_CHAMBER_POS.offset(0, 0, 2);
+    private static final BlockPos ELIAS_ROPE_POS = ELIAS_CHAMBER_POS.offset(0, 0, -3);
     private static final String WITNESS_TAG = "nowayup_witness";
     private static final String WITNESS_ENDING_TAG = "nowayup_witness_ending";
     private static final long COLLAPSE_STAGE_TICKS = 600L;
     private static final long COLLAPSE_RUMBLE_TICKS = 100L;
     private static final long REPLACEMENT_END_TICKS = 4800L;
+    private static final long ENDING_RETURN_TICKS = 3600L;
 
     private MirrorMineSystem() {
     }
@@ -85,18 +90,23 @@ public final class MirrorMineSystem {
         state.setMirrorStartTick(level.getGameTime());
         state.setCollapseStage(0);
         state.setMirrorEventStage(0);
-        state.resetLoopEndingComplete();
-        state.resetDescentEndingComplete();
-        state.resetReplacementEndingComplete();
-        state.resetWitnessEndingComplete();
-        state.resetSealEndingComplete();
+        state.clearEndingReturn();
         state.setNextMirrorFootstepTick(level.getGameTime() + 100L);
         state.addFear(50);
+        triggerMirrorEntryDesktopMessage(player, state);
         player.teleportTo(level, MIRROR_POS.getX() + 0.5, MIRROR_POS.getY(), MIRROR_POS.getZ() + 0.5, player.getYRot() + 180.0F, 0.0F);
         player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 45, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 140, 0, false, false));
-        player.displayClientMessage(Component.literal("Do not climb this time."), true);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.do_not_climb_this_time"), true);
         level.playSound(null, player.blockPosition(), SoundEvents.AMBIENT_SOUL_SAND_VALLEY_MOOD.value(), SoundSource.AMBIENT, 1.0F, 0.5F);
+    }
+
+    private static void triggerMirrorEntryDesktopMessage(ServerPlayer player, PlayerFearState state) {
+        if (state.desktopMessageCreated()) {
+            return;
+        }
+        NoWayUpNetwork.sendDesktopScare(player);
+        state.setDesktopMessageCreated();
     }
 
     public static void tickMirror(ServerPlayer player, PlayerFearState state) {
@@ -119,7 +129,7 @@ public final class MirrorMineSystem {
         if (targetStage > state.collapseStage()) {
             applyCollapseStage(level, player, targetStage);
             state.setCollapseStage(targetStage);
-            player.displayClientMessage(Component.literal(collapseMessage(targetStage)), true);
+            player.displayClientMessage(NoWayUpText.tr(collapseMessageKey(targetStage)), true);
             level.playSound(null, player.blockPosition(), SoundEvents.DEEPSLATE_BREAK, SoundSource.BLOCKS, 1.0F, 0.55F);
         }
         tickActiveCollapse(level, player, state, mirrorTicks);
@@ -181,7 +191,7 @@ public final class MirrorMineSystem {
             return false;
         }
         state.setMirrorEventStage(4);
-        triggerFalseDoor(player);
+        triggerFalseDoor(player, state);
         return true;
     }
 
@@ -198,17 +208,59 @@ public final class MirrorMineSystem {
             applyCollapseStage(level, player, clamped);
         }
         state.setCollapseStage(clamped);
-        player.displayClientMessage(Component.literal(collapseMessage(clamped)), true);
+        player.displayClientMessage(NoWayUpText.tr(collapseMessageKey(clamped)), true);
     }
 
     private static boolean hasTerminalEnding(PlayerFearState state) {
+        return state.endingReturnPending();
+    }
+
+    public static boolean tickEndingReturn(ServerPlayer player, PlayerFearState state, long gameTime) {
+        if (!state.endingReturnPending()) {
+            return false;
+        }
+        if (state.endingReturnTick() > gameTime) {
+            return false;
+        }
+        returnToMineAfterEnding(player, state);
+        return true;
+    }
+
+    public static void returnToMineAfterEnding(ServerPlayer player, PlayerFearState state) {
+        ServerLevel overworld = player.server.getLevel(Level.OVERWORLD);
+        ServerLevel target = overworld == null ? player.serverLevel() : overworld;
+        MineshaftPrisonSystem.buildStartingChamber(target);
+        MineshaftPrisonSystem.updateSupplyChest(target);
+        state.setMirrorEntered(false);
+        state.setCollapseStage(0);
+        state.setMirrorEventStage(0);
+        state.clearEndingReturn();
+        state.resetProgressForNewLoop(target.getGameTime());
+        player.setGameMode(GameType.SURVIVAL);
+        player.removeAllEffects();
+        player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+        player.removeEffect(MobEffects.SLOW_FALLING);
+        player.removeEffect(MobEffects.DAMAGE_RESISTANCE);
+        player.teleportTo(target, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), 0.0F);
+        player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 120, 0, false, false));
+        player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 80, 0, false, false));
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.back_to_mine"), true);
+        target.playSound(null, MineshaftPrisonSystem.START_POS, SoundEvents.AMBIENT_CAVE.value(), SoundSource.AMBIENT, 1.0F, 0.4F);
+        target.playSound(null, MineshaftPrisonSystem.START_POS.offset(0, 0, -4), SoundEvents.WOODEN_DOOR_CLOSE, SoundSource.AMBIENT, 0.9F, 0.5F);
+    }
+
+    public static boolean allEndingsComplete(PlayerFearState state) {
         return state.loopEndingComplete()
-            || state.descentEndingComplete()
-            || state.replacementEndingComplete()
-            || state.witnessEndingComplete()
-            || state.sealEndingComplete()
-            || state.eliasEndingComplete()
-            || state.happyEndingComplete();
+            && state.descentEndingComplete()
+            && state.replacementEndingComplete()
+            && state.witnessEndingComplete()
+            && state.sealEndingComplete()
+            && state.eliasEndingComplete()
+            && state.happyEndingComplete();
+    }
+
+    public static void scheduleEndingReturnToMine(PlayerFearState state, long gameTime, long delayTicks) {
+        state.scheduleEndingReturn(gameTime, delayTicks, false);
     }
 
     private static void tickMirrorFootsteps(ServerPlayer player, PlayerFearState state, long gameTime) {
@@ -218,7 +270,7 @@ public final class MirrorMineSystem {
         BlockPos behind = player.blockPosition().relative(player.getDirection().getOpposite(), 3);
         player.serverLevel().playSound(null, behind, SoundEvents.DEEPSLATE_STEP, SoundSource.AMBIENT, 0.9F, 0.55F);
         if (player.getRandom().nextInt(3) == 0) {
-            player.displayClientMessage(Component.literal("Your steps are late."), true);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.steps_late"), true);
         }
         state.setNextMirrorFootstepTick(gameTime + 80L + player.getRandom().nextInt(180));
     }
@@ -226,18 +278,18 @@ public final class MirrorMineSystem {
     private static void tickMirrorEvents(ServerPlayer player, PlayerFearState state, long mirrorTicks) {
         if (state.mirrorEventStage() < 1 && mirrorTicks >= 600L) {
             placeReversedSigns(player.serverLevel());
-            player.displayClientMessage(Component.literal("This time, do not wake up."), true);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.do_not_wake_up"), true);
             state.setMirrorEventStage(1);
         }
         if (state.mirrorEventStage() < 2 && mirrorTicks >= 1200L) {
             String reversedName = new StringBuilder(player.getGameProfile().getName()).reverse().toString();
             SignTextSystem.placeStandingSign(player.serverLevel(), MIRROR_POS.offset(3, 0, -5), 10, reversedName, "was here", "first.", "");
-            player.displayClientMessage(Component.literal(reversedName + " was here first."), true);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.was_here_first", reversedName), true);
             state.setMirrorEventStage(2);
         }
         if (state.mirrorEventStage() < 3 && mirrorTicks >= 1800L) {
             placeFalseDescentDoor(player.serverLevel());
-            player.displayClientMessage(Component.literal("That was not the exit."), true);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.not_the_exit"), true);
             state.setMirrorEventStage(3);
         }
     }
@@ -263,29 +315,31 @@ public final class MirrorMineSystem {
         }
         state.setReplacementEndingComplete();
         NoWayUpAdvancementSystem.awardEnding(player, NoWayUpAdvancementSystem.REPLACEMENT);
-        player.displayClientMessage(Component.literal("You waited long enough for it to learn you."), false);
-        player.displayClientMessage(Component.literal("You are not the one moving anymore."), true);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.replacement_1"), false);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.replacement_2"), true);
         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 240, 8, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 240, 0, false, false));
         player.setDeltaMovement(0.0, 0.0, 0.0);
+        state.scheduleEndingReturn(player.serverLevel().getGameTime(), ENDING_RETURN_TICKS);
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.SCULK_SHRIEKER_SHRIEK, SoundSource.HOSTILE, 1.0F, 0.4F);
     }
 
     public static void triggerWitnessEnding(ServerPlayer player, PlayerFearState state) {
-        if (state.witnessEndingComplete()) {
-            return;
+        boolean firstCompletion = !state.witnessEndingComplete();
+        if (firstCompletion) {
+            NoWayUpAdvancementSystem.awardEnding(player, NoWayUpAdvancementSystem.WITNESS);
         }
         state.setWitnessEndingComplete();
-        NoWayUpAdvancementSystem.awardEnding(player, NoWayUpAdvancementSystem.WITNESS);
         state.setMirrorEntered(false);
         ServerLevel level = player.serverLevel();
         state.setWitnessEndingStartTick(level.getGameTime());
         state.setWitnessEndingStage(0);
+        state.scheduleEndingReturn(level.getGameTime(), ENDING_RETURN_TICKS);
         sendToWitnessVoid(player, state);
         player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 180, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 180, 3, false, false));
-        player.displayClientMessage(Component.literal("You are early this time."), false);
-        player.displayClientMessage(Component.literal("Do not warn them. They warned you too."), true);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.witness_early"), false);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.witness_warned"), true);
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.AMBIENT, 0.9F, 0.55F);
     }
 
@@ -302,12 +356,12 @@ public final class MirrorMineSystem {
     }
 
     public static void tickWitnessEnding(ServerPlayer player, PlayerFearState state, long gameTime) {
-        if (!state.witnessEndingComplete() || !player.serverLevel().dimension().equals(MIRROR_LEVEL)) {
+        if (!isWitnessEndingActive(state) || !player.serverLevel().dimension().equals(MIRROR_LEVEL)) {
             return;
         }
 
         ServerLevel level = player.serverLevel();
-        if (state.witnessEndingStartTick() <= 0L || state.witnessEndingStartTick() > gameTime) {
+        if (state.witnessEndingStartTick() > gameTime) {
             state.setWitnessEndingStartTick(gameTime);
             state.setWitnessEndingStage(0);
         }
@@ -323,23 +377,23 @@ public final class MirrorMineSystem {
         long elapsed = gameTime - state.witnessEndingStartTick();
         if (state.witnessEndingStage() < 1 && elapsed >= 60L) {
             state.setWitnessEndingStage(1);
-            player.displayClientMessage(Component.literal("You are not late."), false);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.witness_not_late"), false);
             level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.AMBIENT, 0.8F, 0.55F);
         }
         if (state.witnessEndingStage() < 2 && elapsed >= 160L) {
             state.setWitnessEndingStage(2);
-            player.displayClientMessage(Component.literal("Do not warn them."), false);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.witness_do_not_warn"), false);
             level.playSound(null, WITNESS_VOID_POS, SoundEvents.GLASS_PLACE, SoundSource.BLOCKS, 0.9F, 0.45F);
         }
         if (state.witnessEndingStage() < 3 && elapsed >= 280L) {
             state.setWitnessEndingStage(3);
-            player.displayClientMessage(Component.literal("They warned you too."), false);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.witness_they_warned"), false);
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 160, 4, false, false));
         }
 
         if (state.witnessEndingStage() < 4 && elapsed >= 420L) {
             state.setWitnessEndingStage(4);
-            player.displayClientMessage(Component.literal("Now watch."), false);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.now_watch"), false);
             player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 260, 0, false, false));
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 260, 7, false, false));
             level.playSound(null, player.blockPosition(), SoundEvents.SCULK_SHRIEKER_SHRIEK, SoundSource.HOSTILE, 0.8F, 0.35F);
@@ -358,6 +412,12 @@ public final class MirrorMineSystem {
         }
     }
 
+    public static boolean isWitnessEndingActive(PlayerFearState state) {
+        return state.witnessEndingComplete()
+            && state.endingReturnPending()
+            && state.witnessEndingStartTick() > 0L;
+    }
+
     public static void triggerSealEnding(ServerPlayer player, PlayerFearState state) {
         if (state.sealEndingComplete()) {
             return;
@@ -367,42 +427,54 @@ public final class MirrorMineSystem {
         state.setMirrorEntered(false);
         ServerLevel level = player.serverLevel();
         buildSealChamber(level, player.getGameProfile().getName());
+        ensureSafeArrival(level, SEAL_CHAMBER_POS, Blocks.REINFORCED_DEEPSLATE);
+        applyArrivalSafety(player);
         player.teleportTo(level, SEAL_CHAMBER_POS.getX() + 0.5, SEAL_CHAMBER_POS.getY(), SEAL_CHAMBER_POS.getZ() + 0.5, 90.0F, 0.0F);
+        applyArrivalSafety(player);
         player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 50, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 260, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 260, 4, false, false));
-        player.displayClientMessage(Component.literal("AND SOMEONE TAUGHT IT TO SLEEP."), false);
-        player.displayClientMessage(Component.literal("The mine is quiet. For now."), true);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.seal_1"), false);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.seal_2"), true);
+        state.scheduleEndingReturn(level.getGameTime(), ENDING_RETURN_TICKS);
         level.playSound(null, player.blockPosition(), SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), SoundSource.AMBIENT, 1.0F, 0.45F);
     }
 
     public static void triggerEliasEnding(ServerPlayer player, PlayerFearState state) {
-        if (state.eliasEndingComplete()) {
-            return;
+        boolean firstCompletion = !state.eliasEndingComplete();
+        if (firstCompletion) {
+            NoWayUpAdvancementSystem.awardEnding(player, NoWayUpAdvancementSystem.ELIAS);
         }
         ServerLevel level = mirrorLevelOrFallback(player);
         state.setEliasEndingComplete();
-        NoWayUpAdvancementSystem.awardEnding(player, NoWayUpAdvancementSystem.ELIAS);
+        state.setEliasEndingActive(true);
+        state.resetEliasAscentComplete();
         state.setMirrorEntered(false);
         state.setCollapseStage(0);
         state.setMirrorEventStage(0);
+        state.clearEndingReturn();
         buildEliasChamber(level);
-        player.teleportTo(level, ELIAS_CHAMBER_POS.getX() + 0.5, ELIAS_CHAMBER_POS.getY(), ELIAS_CHAMBER_POS.getZ() + 0.5, 0.0F, 0.0F);
+        ensureSafeArrival(level, ELIAS_SPAWN_POS, Blocks.STONE);
+        placeEliasRope(level);
+        player.setGameMode(GameType.SURVIVAL);
+        applyArrivalSafety(player);
+        player.teleportTo(level, ELIAS_SPAWN_POS.getX() + 0.5, ELIAS_SPAWN_POS.getY(), ELIAS_SPAWN_POS.getZ() + 0.5, 180.0F, 0.0F);
+        applyArrivalSafety(player);
         player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 240, 0, false, false));
-        player.displayClientMessage(Component.literal("You came without a map. Good."), false);
-        player.displayClientMessage(Component.literal("Maps are how it learned us."), true);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.elias_1"), false);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.elias_2"), true);
         level.playSound(null, player.blockPosition(), SoundEvents.END_PORTAL_SPAWN, SoundSource.AMBIENT, 0.6F, 1.2F);
     }
 
     public static void tickEliasChamber(ServerPlayer player, PlayerFearState state) {
-        if (!state.eliasEndingComplete()
+        if (!isEliasEndingActive(state)
             || state.eliasAscentComplete()
             || !player.serverLevel().dimension().equals(MIRROR_LEVEL)) {
             return;
         }
 
-        BlockPos top = ELIAS_CHAMBER_POS.offset(0, 11, 0);
+        BlockPos top = ELIAS_ROPE_POS.offset(0, 11, 0);
         boolean reachedRopeTop = player.getY() >= top.getY() - 0.2D
             && Math.abs(player.getX() - (top.getX() + 0.5D)) <= 1.5D
             && Math.abs(player.getZ() - (top.getZ() + 0.5D)) <= 1.5D;
@@ -411,38 +483,62 @@ public final class MirrorMineSystem {
         }
 
         state.setEliasAscentComplete();
+        state.setEliasEndingActive(false);
         player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 260, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 260, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 180, 8, false, false));
-        player.displayClientMessage(Component.literal("This was before up belonged to it."), false);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.elias_final"), false);
+        state.scheduleEndingReturn(player.serverLevel().getGameTime(), ENDING_RETURN_TICKS);
         player.serverLevel().sendParticles(ParticleTypes.LARGE_SMOKE, player.getX(), player.getY() + 1.0, player.getZ(), 80, 1.5, 1.0, 1.5, 0.01);
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.AMBIENT_CAVE.value(), SoundSource.AMBIENT, 1.0F, 0.25F);
     }
 
+    public static boolean isEliasEndingActive(PlayerFearState state) {
+        return state.eliasEndingComplete() && state.eliasEndingActive();
+    }
+
     public static void triggerHappyEnding(ServerPlayer player, PlayerFearState state) {
+        ServerLevel target = dawnLevelOrFallback(player);
         if (state.happyEndingComplete()) {
+            state.setMirrorEntered(false);
+            state.setCollapseStage(0);
+            state.setMirrorEventStage(0);
+            buildDawnClearing(target);
+            ensureSafeArrival(target, DAWN_POS.above(), Blocks.GRASS_BLOCK);
+            applyArrivalSafety(player);
+            player.teleportTo(target, DAWN_POS.getX() + 0.5, DAWN_POS.getY() + 1.0, DAWN_POS.getZ() + 0.5, 0.0F, 0.0F);
+            applyArrivalSafety(player);
+            player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 600, 0, false, false));
+            scheduleEndingReturnToMine(state, target.getGameTime(), ENDING_RETURN_TICKS);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.way_out_open"), true);
             return;
         }
-        ServerLevel target = dawnLevelOrFallback(player);
         state.setHappyEndingComplete();
         NoWayUpAdvancementSystem.awardEnding(player, NoWayUpAdvancementSystem.DAWN);
         state.setMirrorEntered(false);
         state.setCollapseStage(0);
         state.setMirrorEventStage(0);
         buildDawnClearing(target);
+        ensureSafeArrival(target, DAWN_POS.above(), Blocks.GRASS_BLOCK);
+        applyArrivalSafety(player);
         player.teleportTo(target, DAWN_POS.getX() + 0.5, DAWN_POS.getY() + 1.0, DAWN_POS.getZ() + 0.5, 0.0F, 0.0F);
+        applyArrivalSafety(player);
         player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 220, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.SATURATION, 80, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 600, 0, false, false));
-        player.displayClientMessage(Component.literal("You carried every name back to the morning."), false);
-        player.displayClientMessage(Component.literal("For once, the way out stayed open."), true);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.dawn_1"), false);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.dawn_2"), true);
+        scheduleEndingReturnToMine(state, target.getGameTime(), ENDING_RETURN_TICKS);
         target.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8F, 1.2F);
     }
 
     public static void sendToDawn(ServerPlayer player) {
         ServerLevel target = dawnLevelOrFallback(player);
         buildDawnClearing(target);
+        ensureSafeArrival(target, DAWN_POS.above(), Blocks.GRASS_BLOCK);
+        applyArrivalSafety(player);
         player.teleportTo(target, DAWN_POS.getX() + 0.5, DAWN_POS.getY() + 1.0, DAWN_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
+        applyArrivalSafety(player);
     }
 
     public static void tickDawn(ServerPlayer player, PlayerFearState state, long gameTime) {
@@ -453,6 +549,11 @@ public final class MirrorMineSystem {
         state.setMirrorEntered(false);
         state.setCollapseStage(0);
         state.setMirrorEventStage(0);
+        if (!state.endingReturnPending()) {
+            scheduleEndingReturnToMine(state, gameTime, ENDING_RETURN_TICKS);
+        } else if (state.endingReturnToSurface()) {
+            scheduleEndingReturnToMine(state, gameTime, 1L);
+        }
         if (player.getY() < 32.0D || player.getY() > 220.0D) {
             sendToDawn(player);
             return;
@@ -466,12 +567,16 @@ public final class MirrorMineSystem {
     public static void sendToDescentVoid(ServerPlayer player, PlayerFearState state) {
         ServerLevel target = descentVoidLevelOrFallback(player);
         buildDescentVoid(target);
+        ensureSafeArrival(target, DESCENT_VOID_POS.above(), Blocks.BARRIER);
         state.setDescentEndingComplete();
         state.setMirrorEntered(false);
+        applyArrivalSafety(player);
         player.teleportTo(target, DESCENT_VOID_POS.getX() + 0.5, DESCENT_VOID_POS.getY() + 1.0, DESCENT_VOID_POS.getZ() + 0.5, 180.0F, 0.0F);
+        applyArrivalSafety(player);
         player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 260, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 1200, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 1200, 4, false, false));
+        state.scheduleEndingReturn(target.getGameTime(), ENDING_RETURN_TICKS);
     }
 
     public static void tickDescentVoid(ServerPlayer player, PlayerFearState state, long gameTime) {
@@ -487,7 +592,7 @@ public final class MirrorMineSystem {
         if (gameTime % 80L == 0L) {
             player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 120, 0, false, false));
             player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 220, 0, false, false));
-            player.displayClientMessage(Component.literal("There is no up here."), true);
+            player.displayClientMessage(NoWayUpText.tr("nowayup.message.no_up_here"), true);
             player.serverLevel().sendParticles(ParticleTypes.ASH, player.getX(), player.getY() + 1.0, player.getZ(), 45, 2.2, 1.2, 2.2, 0.01);
         }
     }
@@ -531,6 +636,29 @@ public final class MirrorMineSystem {
             }
         }
         return shaft && grave && mirror && elias;
+    }
+
+    private static void ensureSafeArrival(ServerLevel level, BlockPos feetPos, Block floorBlock) {
+        level.getChunk(feetPos);
+        for (int x = -2; x <= 2; x++) {
+            for (int z = -2; z <= 2; z++) {
+                level.setBlock(feetPos.offset(x, -1, z), floorBlock.defaultBlockState(), 3);
+            }
+        }
+        for (int x = -1; x <= 1; x++) {
+            for (int y = 0; y <= 3; y++) {
+                for (int z = -1; z <= 1; z++) {
+                    level.setBlock(feetPos.offset(x, y, z), Blocks.AIR.defaultBlockState(), 3);
+                }
+            }
+        }
+    }
+
+    private static void applyArrivalSafety(ServerPlayer player) {
+        player.setDeltaMovement(0.0D, 0.0D, 0.0D);
+        player.fallDistance = 0.0F;
+        player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 160, 0, false, false));
+        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 160, 4, false, false));
     }
 
     private static void buildDawnClearing(ServerLevel level) {
@@ -725,21 +853,56 @@ public final class MirrorMineSystem {
 
     private static void buildEliasChamber(ServerLevel level) {
         BlockPos center = ELIAS_CHAMBER_POS;
-        for (int x = -5; x <= 5; x++) {
-            for (int y = -1; y <= 12; y++) {
-                for (int z = -5; z <= 5; z++) {
+        for (int x = -7; x <= 7; x++) {
+            for (int y = -2; y <= 13; y++) {
+                for (int z = -7; z <= 7; z++) {
                     BlockPos pos = center.offset(x, y, z);
-                    boolean wall = Math.abs(x) == 5 || Math.abs(z) == 5 || y == -1 || y == 12;
-                    level.setBlock(pos, wall ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState(), 3);
+                    boolean outerShell = Math.abs(x) == 7 || Math.abs(z) == 7 || y == -2 || y == 13;
+                    boolean roughWall = Math.abs(x) >= 5 || Math.abs(z) >= 5 || y == -1 || y == 12;
+                    if (outerShell || roughWall) {
+                        level.setBlock(pos, eliasStoneFor(x, y, z).defaultBlockState(), 3);
+                    } else {
+                        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                    }
                 }
             }
         }
-        for (int y = 0; y <= 11; y++) {
-            level.setBlock(center.offset(0, y, 0), Blocks.LADDER.defaultBlockState().setValue(net.minecraft.world.level.block.LadderBlock.FACING, net.minecraft.core.Direction.SOUTH), 3);
+
+        for (int x = -2; x <= 2; x++) {
+            for (int z = -1; z <= 3; z++) {
+                level.setBlock(center.offset(x, -1, z), Blocks.STONE.defaultBlockState(), 3);
+            }
         }
-        level.setBlock(center.offset(0, 12, 0), Blocks.AIR.defaultBlockState(), 3);
-        level.setBlock(center.offset(0, 11, 1), Blocks.CHAIN.defaultBlockState(), 3);
+
+        placeEliasRope(level);
+        level.setBlock(ELIAS_ROPE_POS.offset(0, 12, 0), Blocks.AIR.defaultBlockState(), 3);
+        level.setBlock(ELIAS_ROPE_POS.offset(0, 11, 1), Blocks.CHAIN.defaultBlockState(), 3);
+        level.setBlock(ELIAS_ROPE_POS.offset(0, 11, 0), Blocks.LADDER.defaultBlockState().setValue(net.minecraft.world.level.block.LadderBlock.FACING, Direction.SOUTH), 3);
+
+        level.setBlock(center.offset(-2, 0, 2), Blocks.CANDLE.defaultBlockState(), 3);
+        level.setBlock(center.offset(2, 0, 1), Blocks.CANDLE.defaultBlockState(), 3);
         SignTextSystem.placeStandingSign(level, center.offset(2, 0, 0), 12, "Maps are", "how it", "learned us.", "");
+    }
+
+    private static void placeEliasRope(ServerLevel level) {
+        for (int y = 0; y <= 11; y++) {
+            level.setBlock(ELIAS_ROPE_POS.offset(0, y, -1), Blocks.STONE.defaultBlockState(), 3);
+            level.setBlock(ELIAS_ROPE_POS.offset(0, y, 0), Blocks.LADDER.defaultBlockState().setValue(net.minecraft.world.level.block.LadderBlock.FACING, Direction.SOUTH), 3);
+        }
+    }
+
+    private static Block eliasStoneFor(int x, int y, int z) {
+        int value = Math.abs((x * 31) + (y * 17) - (z * 13));
+        if (value % 11 == 0) {
+            return Blocks.COBBLESTONE;
+        }
+        if (value % 7 == 0) {
+            return Blocks.ANDESITE;
+        }
+        if (value % 5 == 0) {
+            return Blocks.DEEPSLATE;
+        }
+        return Blocks.STONE;
     }
 
     private static void buildDescentTunnel(ServerLevel level) {
@@ -792,13 +955,14 @@ public final class MirrorMineSystem {
         level.getServer().execute(() -> SignTextSystem.placeStandingSign(level, FALSE_DESCENT_DOOR_POS.south(), 8, "That was", "not the", "exit.", ""));
     }
 
-    private static void triggerFalseDoor(ServerPlayer player) {
+    private static void triggerFalseDoor(ServerPlayer player, PlayerFearState state) {
         ServerLevel level = player.serverLevel();
         level.setBlock(FALSE_DESCENT_DOOR_POS.south(), Blocks.COBBLED_DEEPSLATE.defaultBlockState(), 3);
         level.setBlock(FALSE_DESCENT_DOOR_POS.south().above(), Blocks.COBBLED_DEEPSLATE.defaultBlockState(), 3);
         player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0, false, false));
-        player.displayClientMessage(Component.literal("That was not the exit."), true);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.not_the_exit"), true);
         level.playSound(null, player.blockPosition(), SoundEvents.WOODEN_DOOR_CLOSE, SoundSource.BLOCKS, 1.0F, 0.4F);
+        ForcedCrashSystem.triggerEventCrash(player, state);
     }
 
     private static void placeMirrorChest(ServerLevel level, BlockPos pos) {
@@ -893,21 +1057,21 @@ public final class MirrorMineSystem {
         level.playSound(null, base, SoundEvents.GRAVEL_FALL, SoundSource.BLOCKS, 0.85F, 0.55F);
     }
 
-    private static String collapseMessage(int stage) {
+    private static String collapseMessageKey(int stage) {
         return switch (stage) {
-            case 0 -> "The mirror mine is holding its breath.";
-            case 1 -> "Something above you broke.";
-            case 2 -> "The way behind you is closing.";
-            case 3 -> "The light is leaving.";
-            case 4 -> "The mine is forgetting its shape.";
-            default -> "Choose. Up, down, or stay.";
+            case 0 -> "nowayup.collapse.0";
+            case 1 -> "nowayup.collapse.1";
+            case 2 -> "nowayup.collapse.2";
+            case 3 -> "nowayup.collapse.3";
+            case 4 -> "nowayup.collapse.4";
+            default -> "nowayup.collapse.5";
         };
     }
 
     private static void triggerDescentEnding(ServerPlayer player, PlayerFearState state) {
         sendToDescentVoid(player, state);
         NoWayUpAdvancementSystem.awardEnding(player, NoWayUpAdvancementSystem.DESCENT);
-        player.displayClientMessage(Component.literal("You found a way down. That was never allowed."), false);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.descent"), false);
         player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 220, 0, false, false));
         player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 220, 0, false, false));
         player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.END_PORTAL_SPAWN, SoundSource.AMBIENT, 0.8F, 0.7F);
@@ -916,15 +1080,14 @@ public final class MirrorMineSystem {
     public static void triggerLoopEnding(ServerPlayer player, PlayerFearState state) {
         state.setLoopEndingComplete();
         NoWayUpAdvancementSystem.awardEnding(player, NoWayUpAdvancementSystem.LOOP);
-        state.setMirrorEntered(false);
-        state.setCollapseStage(0);
         ServerLevel overworld = player.server.getLevel(Level.OVERWORLD);
         ServerLevel target = overworld == null ? player.serverLevel() : overworld;
+        state.resetProgressForNewLoop(target.getGameTime());
         MineshaftPrisonSystem.buildStartingChamber(target);
         player.teleportTo(target, MineshaftPrisonSystem.START_POS.getX() + 0.5, MineshaftPrisonSystem.START_POS.getY(), MineshaftPrisonSystem.START_POS.getZ() + 0.5, player.getYRot(), player.getXRot());
         player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 180, 0, false, false));
         target.setBlock(MineshaftPrisonSystem.START_POS.offset(0, 1, -3), Blocks.AIR.defaultBlockState(), 3);
         SignTextSystem.placeStandingSign(target, MineshaftPrisonSystem.START_POS.offset(0, 0, -2), 8, "How far", "will you", "climb this", "time?");
-        player.displayClientMessage(Component.literal("How far will you climb this time?"), false);
+        player.displayClientMessage(NoWayUpText.tr("nowayup.message.loop"), false);
     }
 }

@@ -20,19 +20,19 @@ public final class FearMessageSystem {
     }
 
     public static void whisper(ServerPlayer player, int index) {
-        String line = WHISPERS.get(Math.floorMod(index, WHISPERS.size()));
-        player.displayClientMessage(Component.literal("??? whispers: " + line).withStyle(ChatFormatting.DARK_GRAY), true);
+        int lineIndex = Math.floorMod(index, WHISPERS.size());
+        player.displayClientMessage(Component.translatable("nowayup.message.whisper", Component.translatable("nowayup.whisper." + lineIndex)).withStyle(ChatFormatting.DARK_GRAY), true);
     }
 
     public static void nameCall(ServerPlayer player) {
-        player.displayClientMessage(Component.literal("??? whispers: " + player.getGameProfile().getName()).withStyle(ChatFormatting.DARK_RED), true);
+        player.displayClientMessage(Component.translatable("nowayup.message.whisper", player.getGameProfile().getName()).withStyle(ChatFormatting.DARK_RED), true);
     }
 
     public static void watcherSeen(ServerPlayer player) {
-        player.displayClientMessage(Component.literal("You saw it too, didn't you?").withStyle(ChatFormatting.GRAY), true);
+        player.displayClientMessage(Component.translatable("nowayup.message.watcher_seen").withStyle(ChatFormatting.GRAY), true);
     }
 
     public static void fakeExit(ServerPlayer player) {
-        player.displayClientMessage(Component.literal("There is no way up.").withStyle(ChatFormatting.DARK_RED), true);
+        player.displayClientMessage(Component.translatable("nowayup.message.no_way_up").withStyle(ChatFormatting.DARK_RED), true);
     }
 }

@@ -4,10 +4,10 @@
       "item": "minecraft:deepslate_bricks"
     },
     "title": {
-      "text": "No Way Up"
+      "translate": "advancements.nowayup.root.title"
     },
     "description": {
-      "text": "The mine noticed you."
+      "translate": "advancements.nowayup.root.description"
     },
     "background": "minecraft:textures/block/deepslate_bricks.png",
     "frame": "task",

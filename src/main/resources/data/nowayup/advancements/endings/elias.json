@@ -5,10 +5,10 @@
       "item": "minecraft:writable_book"
     },
     "title": {
-      "text": "Elias Ending"
+      "translate": "advancements.nowayup.endings.elias.title"
     },
     "description": {
-      "text": "You came without a map."
+      "translate": "advancements.nowayup.endings.elias.description"
     },
     "frame": "challenge",
     "show_toast": true,

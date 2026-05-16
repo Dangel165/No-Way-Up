@@ -95,6 +95,17 @@ public final class MineshaftPrisonSystem {
         SignTextSystem.placeStandingSign(level, center.offset(0, 6, 4), 8, "The surface", "was removed.", "", "Go below.");
     }
 
+    public static void clearNoSurfaceColumn(ServerLevel level) {
+        BlockPos center = START_POS;
+        for (int y = 5; y <= 120; y++) {
+            for (int x = -7; x <= 7; x++) {
+                for (int z = -7; z <= 7; z++) {
+                    level.setBlock(center.offset(x, y, z), Blocks.AIR.defaultBlockState(), 3);
+                }
+            }
+        }
+    }
+
     public static void updateSupplyChest(ServerLevel level) {
         if (!level.getBlockState(SUPPLY_CHEST_POS).is(Blocks.CHEST)) {
             level.setBlock(SUPPLY_CHEST_POS, Blocks.CHEST.defaultBlockState(), 3);
@@ -158,6 +169,22 @@ public final class MineshaftPrisonSystem {
     public static boolean isAtMirrorGate(ServerPlayer player, int depth) {
         return player.blockPosition().distSqr(mirrorGateTriggerPos(depth)) < 4.0
             || player.blockPosition().distSqr(mirrorGateTriggerPos(0)) < 4.0;
+    }
+
+    public static boolean isProtectedStartAltar(BlockPos pos) {
+        BlockPos center = START_POS;
+        int radius = segmentRadius(0);
+        BlockPos wall = center.offset(0, 0, -radius);
+        BlockPos trigger = mirrorGateTriggerPos(0);
+
+        boolean frameOrSculkWall = pos.getZ() == wall.getZ()
+            && pos.getX() >= wall.getX() - 2
+            && pos.getX() <= wall.getX() + 2
+            && pos.getY() >= wall.getY()
+            && pos.getY() <= wall.getY() + 3;
+        boolean triggerBlock = pos.equals(trigger) || pos.equals(trigger.above(2));
+        boolean signBlock = pos.equals(trigger.east());
+        return frameOrSculkWall || triggerBlock || signBlock;
     }
 
     public static BlockPos mirrorGateTriggerPos(int depth) {

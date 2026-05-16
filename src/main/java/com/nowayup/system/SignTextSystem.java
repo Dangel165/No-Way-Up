@@ -23,7 +23,7 @@ public final class SignTextSystem {
         if (blockEntity instanceof SignBlockEntity sign) {
             SignText text = new SignText().setColor(DyeColor.BLACK);
             for (int i = 0; i < Math.min(4, lines.length); i++) {
-                text = text.setMessage(i, Component.literal(lines[i]));
+                text = text.setMessage(i, NoWayUpText.signLine(lines[i]));
             }
             sign.setText(text, true);
             sign.setText(text, false);

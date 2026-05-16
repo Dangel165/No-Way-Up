@@ -5,10 +5,10 @@
       "item": "minecraft:reinforced_deepslate"
     },
     "title": {
-      "text": "Seal Ending"
+      "translate": "advancements.nowayup.endings.seal.title"
     },
     "description": {
-      "text": "The mine is quiet. For now."
+      "translate": "advancements.nowayup.endings.seal.description"
     },
     "frame": "challenge",
     "show_toast": true,

@@ -5,10 +5,10 @@
       "item": "minecraft:oak_door"
     },
     "title": {
-      "text": "Descent Ending"
+      "translate": "advancements.nowayup.endings.descent.title"
     },
     "description": {
-      "text": "You found a way down. That was never allowed."
+      "translate": "advancements.nowayup.endings.descent.description"
     },
     "frame": "goal",
     "show_toast": true,

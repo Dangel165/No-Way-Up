@@ -5,10 +5,10 @@
       "item": "minecraft:ladder"
     },
     "title": {
-      "text": "Loop Ending"
+      "translate": "advancements.nowayup.endings.loop.title"
     },
     "description": {
-      "text": "You climbed back into the beginning."
+      "translate": "advancements.nowayup.endings.loop.description"
     },
     "frame": "goal",
     "show_toast": true,

@@ -5,10 +5,10 @@
       "item": "minecraft:player_head"
     },
     "title": {
-      "text": "Witness Ending"
+      "translate": "advancements.nowayup.endings.witness.title"
     },
     "description": {
-      "text": "You arrived early enough to see yourself waiting."
+      "translate": "advancements.nowayup.endings.witness.description"
     },
     "frame": "goal",
     "show_toast": true,

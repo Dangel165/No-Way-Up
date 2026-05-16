@@ -20,6 +20,7 @@ public class PlayerFearState {
     private boolean witnessEndingComplete;
     private boolean sealEndingComplete;
     private boolean eliasEndingComplete;
+    private boolean eliasEndingActive;
     private boolean eliasAscentComplete;
     private boolean happyEndingComplete;
     private long nextAudioTick;
@@ -29,6 +30,8 @@ public class PlayerFearState {
     private long mirrorStartTick;
     private long nextMirrorFootstepTick;
     private long witnessEndingStartTick;
+    private long endingReturnTick;
+    private boolean endingReturnToSurface;
     private long wakeSequenceStartTick;
     private int witnessEndingStage;
     private int wakeSequenceStage;
@@ -52,6 +55,7 @@ public class PlayerFearState {
         state.witnessEndingComplete = tag.getBoolean("WitnessEndingComplete");
         state.sealEndingComplete = tag.getBoolean("SealEndingComplete");
         state.eliasEndingComplete = tag.getBoolean("EliasEndingComplete");
+        state.eliasEndingActive = tag.getBoolean("EliasEndingActive");
         state.eliasAscentComplete = tag.getBoolean("EliasAscentComplete");
         state.happyEndingComplete = tag.getBoolean("HappyEndingComplete");
         state.nextAudioTick = tag.getLong("NextAudioTick");
@@ -61,6 +65,8 @@ public class PlayerFearState {
         state.mirrorStartTick = tag.getLong("MirrorStartTick");
         state.nextMirrorFootstepTick = tag.getLong("NextMirrorFootstepTick");
         state.witnessEndingStartTick = tag.getLong("WitnessEndingStartTick");
+        state.endingReturnTick = tag.getLong("EndingReturnTick");
+        state.endingReturnToSurface = tag.getBoolean("EndingReturnToSurface");
         state.wakeSequenceStartTick = tag.getLong("WakeSequenceStartTick");
         state.witnessEndingStage = tag.getInt("WitnessEndingStage");
         state.wakeSequenceStage = tag.getInt("WakeSequenceStage");
@@ -86,6 +92,7 @@ public class PlayerFearState {
         tag.putBoolean("WitnessEndingComplete", witnessEndingComplete);
         tag.putBoolean("SealEndingComplete", sealEndingComplete);
         tag.putBoolean("EliasEndingComplete", eliasEndingComplete);
+        tag.putBoolean("EliasEndingActive", eliasEndingActive);
         tag.putBoolean("EliasAscentComplete", eliasAscentComplete);
         tag.putBoolean("HappyEndingComplete", happyEndingComplete);
         tag.putLong("NextAudioTick", nextAudioTick);
@@ -95,6 +102,8 @@ public class PlayerFearState {
         tag.putLong("MirrorStartTick", mirrorStartTick);
         tag.putLong("NextMirrorFootstepTick", nextMirrorFootstepTick);
         tag.putLong("WitnessEndingStartTick", witnessEndingStartTick);
+        tag.putLong("EndingReturnTick", endingReturnTick);
+        tag.putBoolean("EndingReturnToSurface", endingReturnToSurface);
         tag.putLong("WakeSequenceStartTick", wakeSequenceStartTick);
         tag.putInt("WitnessEndingStage", witnessEndingStage);
         tag.putInt("WakeSequenceStage", wakeSequenceStage);
@@ -133,6 +142,10 @@ public class PlayerFearState {
         fakeExitCount = 0;
     }
 
+    public void resetReconnectCount() {
+        reconnectCount = 0;
+    }
+
     public int watcherSightings() {
         return watcherSightings;
     }
@@ -151,6 +164,10 @@ public class PlayerFearState {
 
     public void incrementEnvironmentMutationCount() {
         environmentMutationCount++;
+    }
+
+    public void resetEnvironmentMutationCount() {
+        environmentMutationCount = 0;
     }
 
     public int collapseStage() {
@@ -293,7 +310,16 @@ public class PlayerFearState {
 
     public void resetEliasEndingComplete() {
         eliasEndingComplete = false;
+        eliasEndingActive = false;
         eliasAscentComplete = false;
+    }
+
+    public boolean eliasEndingActive() {
+        return eliasEndingActive;
+    }
+
+    public void setEliasEndingActive(boolean eliasEndingActive) {
+        this.eliasEndingActive = eliasEndingActive;
     }
 
     public boolean eliasAscentComplete() {
@@ -302,6 +328,10 @@ public class PlayerFearState {
 
     public void setEliasAscentComplete() {
         eliasAscentComplete = true;
+    }
+
+    public void resetEliasAscentComplete() {
+        eliasAscentComplete = false;
     }
 
     public boolean happyEndingComplete() {
@@ -320,6 +350,7 @@ public class PlayerFearState {
         setMirrorEntered(false);
         setCollapseStage(0);
         setMirrorEventStage(0);
+        clearEndingReturn();
         resetLoopEndingComplete();
         resetDescentEndingComplete();
         resetReplacementEndingComplete();
@@ -336,14 +367,61 @@ public class PlayerFearState {
         setMirrorEntered(false);
         setCollapseStage(0);
         setMirrorEventStage(0);
-        resetLoopEndingComplete();
-        resetDescentEndingComplete();
-        resetReplacementEndingComplete();
-        resetWitnessEndingComplete();
-        resetSealEndingComplete();
-        resetEliasEndingComplete();
+        witnessEndingStartTick = 0L;
+        witnessEndingStage = 0;
+        eliasEndingActive = false;
+        eliasAscentComplete = false;
+        clearEndingReturn();
         resetEventTimers(gameTime);
         startWakeSequence(gameTime);
+    }
+
+    public void resetProgressForNewLoop(long gameTime) {
+        setFearProgress(0);
+        resetReconnectCount();
+        resetFakeExitCount();
+        resetWatcherSightings();
+        resetEnvironmentMutationCount();
+        resetForcedCrashTriggered();
+        desktopMessageCreated = false;
+        setMirrorEntered(false);
+        setCollapseStage(0);
+        setMirrorEventStage(0);
+        mirrorStartTick = 0L;
+        nextMirrorFootstepTick = 0L;
+        witnessEndingStartTick = 0L;
+        witnessEndingStage = 0;
+        eliasEndingActive = false;
+        eliasAscentComplete = false;
+        clearEndingReturn();
+        resetEventTimers(gameTime);
+        startWakeSequence(gameTime);
+    }
+
+    public boolean endingReturnPending() {
+        return endingReturnTick > 0L;
+    }
+
+    public long endingReturnTick() {
+        return endingReturnTick;
+    }
+
+    public void scheduleEndingReturn(long gameTime, long delayTicks) {
+        scheduleEndingReturn(gameTime, delayTicks, false);
+    }
+
+    public void scheduleEndingReturn(long gameTime, long delayTicks, boolean toSurface) {
+        endingReturnTick = Math.max(1L, gameTime + Math.max(1L, delayTicks));
+        endingReturnToSurface = toSurface;
+    }
+
+    public boolean endingReturnToSurface() {
+        return endingReturnToSurface;
+    }
+
+    public void clearEndingReturn() {
+        endingReturnTick = 0L;
+        endingReturnToSurface = false;
     }
 
     public void startWakeSequence(long gameTime) {
